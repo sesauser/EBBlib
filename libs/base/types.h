@@ -47,4 +47,25 @@ typedef long sval;
 
 #define NULL (void *)(0)
 
+/* FIXME: put some prototypes I wanted here */
+void exit(int);
+int printf(const char *fmt, ...);
+typedef __SIZE_TYPE__ size_t;
+void *memset(void *s, int c, size_t n);
+
+#define tassert(EX,STMT)                                                   \
+  if (!(EX)) {								\
+    printf("ERROR: file \"%s\", line %d\n", __FILE__, __LINE__);	\
+    STMT;								\
+    exit(-1);								\
+  }                                                                  
+
+#define tassertMsg(EX, MSG...)                                             \
+    if (!(EX)) {                                                           \
+      printf(MSG);							\
+      printf("ERROR: file \"%s\", line %d\n", __FILE__, __LINE__);	\
+      exit(-1);								\
+    }                                                                  
+/* END FIXME */
+
 #endif	/* __COMMON__IA32__TYPES_H__ */

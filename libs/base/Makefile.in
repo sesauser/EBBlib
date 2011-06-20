@@ -1,1 +1,1 @@
-HDRFILES += bitops.h types.h
+HDRFILES += bitops.h types.h SysStatus.h
