@@ -1,0 +1,2 @@
+SRCFILES += pcie.c
+HDRFILES += pcie.h

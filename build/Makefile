@@ -1,6 +1,7 @@
 -include Makeconf
 
 CC ?= gcc
+CFLAGS += -std=gnu99
 
 TOOLPREFIX ?=
 AR ?= $(TOOLPREFIX)ar

@@ -1,0 +1,2 @@
+SRCFILES += infiniband.c
+HDRFILES += infiniband.h

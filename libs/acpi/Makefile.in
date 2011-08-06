@@ -1,0 +1,2 @@
+SRCFILES += acpi.c
+HDRFILES += acpi.h

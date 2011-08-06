@@ -9,7 +9,7 @@ ARCHIVES := libebb.a
 SRCFILES :=
 HDRFILES :=
 
-LIBS := counter ebblib base thinwire
+LIBS := counter ebblib base thinwire acpi pcie infiniband
 
 VPATH := $(addprefix $(SRCDIR)/, $(LIBS))
 
