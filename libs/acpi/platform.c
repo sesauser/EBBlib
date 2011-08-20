@@ -1,30 +1,56 @@
 #include "platform.h"
 #include <l4io.h>
 #include <l4/sigma0.h>
+#define LOG printf
+#define PREFIX "L4_map: "
+
+#define PAGE_SIZE (1 << 12)
 
 void* platform_map(void* address, L4_Word_t size)
 {
-	L4_Word_t offset = ((L4_Word_t)address) & ((PAGE_SIZE)-1);
-	address = ((UINT8*)address)-offset;
-	void* result = 0;
-	while (true)
+	if (size==0)
 	{
-		L4_Fpage_t fp = L4_Fpage(address, PAGE_SIZE), rcv = fp, res;
-		L4_Set_Rights(&fp, 4);	// set read right
-		res = L4_Sigma0_GetPage_RcvWindow(L4_nilthread, fp, rcv);
-		if (L4_IsNilFpage(res))
-		{
-			ACPI_LOG(ACPI_PREFIX "mapping failed %x (remaining %d)\n", address, size);
-			break;
-		}
-		if (result==0)
-			result = L4_Address(res)+offset;
-		if (size<PAGE_SIZE)
-			break;
-		address+= PAGE_SIZE;
-		size-= PAGE_SIZE;
+		LOG(PREFIX "mapping failed %X size==0\n", address);
+		return 0;
 	}
-	return result;
+	if (size < PAGE_SIZE)
+	{
+		size = PAGE_SIZE;
+	}
+	L4_Word_t offset = ((L4_Word_t)address) & ((PAGE_SIZE)-1);
+	address = ((unsigned char*)address)-offset;
+	L4_Fpage_t fp = L4_Fpage(address, size), rcv = fp;
+	L4_Set_Rights(&fp, L4_ReadWriteOnly);
+	L4_Fpage_t res = L4_Sigma0_GetPage_RcvWindow(L4_nilthread, fp, rcv);
+	if (L4_IsNilFpage(res))
+	{
+		LOG(PREFIX "mapping failed %X (size %d)\n", address, size);
+		return 0;
+	}
+	return L4_Address(res)+offset;
+}
+
+void* platform_mapAny(L4_Word_t size)
+{
+	if (size==0)
+	{
+		LOG(PREFIX "mapping failed any size==0\n");
+		return 0;
+	}
+	if (size < PAGE_SIZE)
+	{
+		size = PAGE_SIZE;
+	}
+	L4_Fpage_t rcv = L4_CompleteAddressSpace;
+	L4_Fpage_t fp = L4_Fpage(~0UL, size);
+	L4_Set_Rights(&fp, L4_ReadWriteOnly);
+	L4_Fpage_t res = L4_Sigma0_GetPage_RcvWindow(L4_nilthread, fp, rcv);
+	if (L4_IsNilFpage(res))
+	{
+		LOG(PREFIX "mapping failed any (size %d)\n", size);
+		return 0;
+	}
+	return L4_Address(res);
 }
 
 void platform_unmap(void* address)

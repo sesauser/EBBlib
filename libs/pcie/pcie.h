@@ -31,25 +31,59 @@
 extern "C" {
 #endif
 
+/*
 struct pci_header_global
 {
 	unsigned short vendorId;
 	unsigned short deviceId;
+	unsigned short Command;
+	unsigned short Status;
+	// read only
+	unsigned char revisionId;
+	unsigned char ProgIF;
+	unsigned char Subclass;
+	unsigned char ClassCode;
+
+	unsigned char CacheLineSize;
+	unsigned char Latency Timer;
+	unsigned char HeaderType;
+	unsigned char BIST;
 };
 struct pci_header0
 {
-};
+	pci_header_global global;
+};*/
+
+#define  PCI_EXP_TYPE_ENDPOINT	0x0	/* Express Endpoint */
+#define  PCI_EXP_TYPE_LEG_END	0x1	/* Legacy Endpoint */
+#define  PCI_EXP_TYPE_ROOT_PORT 0x4	/* Root Port */
+#define  PCI_EXP_TYPE_UPSTREAM	0x5	/* Upstream Port */
+#define  PCI_EXP_TYPE_DOWNSTREAM 0x6	/* Downstream Port */
+#define  PCI_EXP_TYPE_PCI_BRIDGE 0x7	/* PCI/PCI-X Bridge */
+#define  PCI_EXP_TYPE_RC_END	0x9	/* Root Complex Integrated Endpoint */
+#define  PCI_EXP_TYPE_RC_EC	0x10	/* Root Complex Event Collector */
+
 struct pcie_device
 {
+	struct pcie_device_internal* _internal;
 	unsigned short vendorId;
 	unsigned short deviceId;
+	unsigned char pcieCap;
+	unsigned char type;
+	unsigned int bar[6];
+	unsigned int barSize[6];
+	unsigned char barType[6];
+	unsigned long (*read_config)(struct pcie_device* self, unsigned short reg);
+	void (*write_config)(struct pcie_device* self, unsigned short reg, unsigned long value);
+	unsigned short (*read_config_word)(struct pcie_device* self, unsigned short reg);
+	void (*write_config_word)(struct pcie_device* self, unsigned short reg, unsigned short value);
 };
 
-typedef int (*pcie_device_callback)(struct pcie_device*);
+typedef int (*pcie_device_callback)(struct pcie_device*, void*);
 
 extern void pcie_init(void);
 // callback will be called for every (TODO not allocated) device
-extern unsigned int pcie_find_device(pcie_device_callback callback);
+extern unsigned int pcie_find_device(pcie_device_callback callback, void* callbackData);
 // search for specific
 //extern unsigned int pcie_find_device_ById(unsigned short vendorId, unsigned short deviceId, pcie_device_callback callback);
 

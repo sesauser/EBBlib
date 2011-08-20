@@ -1,4 +1,4 @@
-/* Copyright 2011 Boston University. All rights reserved. */
+/* Copyright 2011 Karlsruhe Institute of Technology. All rights reserved. */
 
 /* Redistribution and use in source and binary forms, with or without modification, are */
 /* permitted provided that the following conditions are met: */
@@ -22,49 +22,25 @@
 
 /* The views and conclusions contained in the software and documentation are those of the */
 /* authors and should not be interpreted as representing official policies, either expressed */
-/* or implied, of Boston University */
+/* or implied, of Karlsruhe Institute of Technology */
 
+#ifndef _INFINIBAND_INTERNAL_H_
+#define _INFINIBAND_INTERNAL_H_
 
-#include <l4io.h>
-#include <l4/kdebug.h>
-#include <l4/ipc.h>
+#include "infiniband.h"
+#include "../pcie/pcie.h"
 
-#include <verbs.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-int main (void)
+struct Device
 {
-	printf("Infiniband Driver started\n");
-	int dev_num;
-	struct ibv_device** dev_list = ibv_get_device_list(&dev_num);
-	if (dev_list && dev_list[0])
-	{
-		struct ibv_context* ctx = ibv_open_device(dev_list[0]);
-		ibv_free_device_list(dev_list);
-		if (ctx!=0)
-		{
-			int choice = 0;
-			do
-			{
-				printf("(C)lient or (S)erver:\n");
-				choice = getc();
-				if (choice=='C') choice = 'c';
-				if (choice=='S') choice = 's';
-			}
-			while (choice!='c' && choice!='s');
-			if (choice == 'c')
-			{	// client mode
-				printf("start sending data...\n");
-			} else
-			{	// server moce
-				printf("listening for data\n");
-			}
-			ibv_close_device(ctx);
-		}
-	} else
-	{
-		printf("Failed to get IB devices list");
-	}
-	for (;;)
-		L4_KDB_Enter("EOW");
-	return 0;
+	struct pcie_device pcie;
+};
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif

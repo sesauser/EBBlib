@@ -1,2 +1,1 @@
-SRCFILES += acpi.c
-HDRFILES += acpi.h
+SRCFILES += acpi.c platform.c

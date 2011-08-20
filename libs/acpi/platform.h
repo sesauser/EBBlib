@@ -33,9 +33,44 @@
 extern "C" {
 #endif
 
+typedef unsigned char UINT8;
+typedef unsigned short UINT16;
+typedef unsigned int UINT32;
+typedef unsigned long long UINT64;
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned int u32;
+typedef unsigned long long u64;
+
 // map hardware address 1:1
 void* platform_map(void* address, L4_Word_t size);
+void* platform_mapAny(L4_Word_t size);
 void platform_unmap(void* address);
+
+static inline unsigned short bs16(unsigned short value)
+{
+	return ((value & 0xFF) << 8) | ((value >> 8) & 0xFF);
+}
+
+static inline unsigned int bs32(unsigned int value)
+{
+	return (bs16(value & 0xFFFF) << 16) | bs16((value >> 16) & 0xFFFF);
+}
+
+static inline unsigned long long bs64(unsigned long long value)
+{
+	return (bs32(value & 0xFFFFFFFF) << 32) | bs32((value >> 32) & 0xFFFFFFFF);
+}
+
+#ifdef __x86_64__
+#define mb() 	asm volatile("mfence":::"memory")
+#define rmb()	asm volatile("lfence":::"memory")
+#define wmb()	asm volatile("sfence" ::: "memory")
+#else
+#warning implement barriers for this platform
+#endif
+
+#define mmiowb()	asm volatile("" ::: "memory")
 
 #ifdef __cplusplus
 }

@@ -33,15 +33,6 @@
 extern "C" {
 #endif
 
-typedef unsigned char UINT8;
-typedef unsigned short UINT16;
-typedef unsigned int UINT32;
-typedef unsigned long long UINT64;
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-typedef unsigned long long u64;
-
 #define ACPI_NAME_SIZE 4
 #define ACPI_OEM_TABLE_ID_SIZE 8
 #define ACPI_OEM_ID_SIZE 6
@@ -53,7 +44,7 @@ typedef unsigned long long u64;
 // for easy signature compare
 union acpi_name
 {
-	u32 integer;
+	unsigned int integer;
 	char ascii[4];
 };
 
@@ -63,14 +54,14 @@ typedef struct acpi_table_header ACPI_Table;
 struct acpi_table_header
 {
 	union acpi_name signature;	/* ASCII table signature */
-	u32 length;		/* Length of table in bytes, including this header */
-	u8 revision;		/* ACPI Specification minor version # */
-	u8 checksum;		/* To make sum of entire table == 0 */
+	unsigned int length;		/* Length of table in bytes, including this header */
+	unsigned char revision;		/* ACPI Specification minor version # */
+	unsigned char checksum;		/* To make sum of entire table == 0 */
 	char oem_id[ACPI_OEM_ID_SIZE];	/* ASCII OEM identification */
 	char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];	/* ASCII OEM table identification */
-	u32 oem_revision;	/* OEM revision number */
+	unsigned int oem_revision;	/* OEM revision number */
 	union acpi_name asl_compiler_id;	/* ASCII ASL compiler vendor ID */
-	u32 asl_compiler_revision;	/* ASL compiler version */
+	unsigned int asl_compiler_revision;	/* ASL compiler version */
 };
 
 // Reset to default packing

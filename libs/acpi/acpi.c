@@ -162,7 +162,6 @@ void* AcpiFindRootPointer()
 	{
 		// 1b) Search EBDA paragraphs (EBDA is required to be 
 		//     minimum of 1K length)
-		ACPI_LOG(ACPI_PREFIX "search EBDA 0x%x\n", PhysicalAddress);
 		UINT8* MemRover = AcpiTbScanMemoryForRsdp ((UINT8*)PhysicalAddress, ACPI_EBDA_WINDOW_SIZE);
 		if (MemRover)
 		{
@@ -201,7 +200,6 @@ static bool acpi_init_tables(void* rsdpPtr)
 	// Differentiate between RSDT and XSDT root tables
 	if (rsdp->Revision > 1 && rsdp->XsdtPhysicalAddress)
 	{
-		ACPI_LOG(ACPI_PREFIX "try xsdt\n");
 		// Root table is an XSDT (64-bit physical addresses). We must use the
 		// XSDT if the revision is > 1 and the XSDT pointer is present, as per
 		// the ACPI specification.
@@ -286,7 +284,7 @@ static bool acpi_init_tables(void* rsdpPtr)
 			desc->signature = header->signature;
 			desc->flags = 0;
 		}
-		ACPI_LOG ("found %c%c%c%c %X (%u)\n", header->signature.ascii[0], header->signature.ascii[1], header->signature.ascii[2], header->signature.ascii[3], header, header->length);
+		//ACPI_LOG ("found %c%c%c%c %X (%u)\n", header->signature.ascii[0], header->signature.ascii[1], header->signature.ascii[2], header->signature.ascii[3], header, header->length);
 		// TODO special case for FADT -> DSDT and FACS
 		table_entry += g_TableEntrySize;
 	}

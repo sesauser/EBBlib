@@ -1,2 +1,2 @@
-SRCFILES += infiniband.c
-HDRFILES += infiniband.h
+SRCFILES += infiniband.c mlx4.c verbs.c
+HDRFILES += verbs.h
