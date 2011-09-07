@@ -1,1 +1,1 @@
-SRCFILES += pcie.c
+SRCFILES += pcie.c msix.c

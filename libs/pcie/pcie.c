@@ -510,8 +510,8 @@ unsigned int pcie_find_device(pcie_device_callback callback, void* callbackData)
 				UINT32 id = pcie_config_read_dword(hc, bus, device, 0, 0);
 				if (id==-1)
 					continue;
-				unsigned short reg;
-				unsigned char pos;	// pcie cap position
+				unsigned char pcieCap = 0;	// pcie cap position
+				unsigned char msixCap = 0;	// msix cap position
 				{	// check for PCIE capability
 					UINT32 extended;
 					extended = pcie_config_read_dword(hc, bus, device, 0, 0x0C);
@@ -520,25 +520,31 @@ unsigned int pcie_find_device(pcie_device_callback callback, void* callbackData)
 					extended = pcie_config_read_dword(hc, bus, device, 0, 4);
 					if ((extended & (1 << 20)) == 0)
 						continue;	// no capability list available
-					pos = pcie_config_read_byte(hc, bus, device, 0, 0x34);	// capabilities pointer
-					bool isE = false;
+					unsigned char pos = pcie_config_read_byte(hc, bus, device, 0, 0x34);	// capabilities pointer
 					while (pos>=0x40)
 					{
 						pos &= ~3;
 						unsigned char id = pcie_config_read_byte(hc, bus, device, 0, pos);
 						if (id == 0xff)
 							break;
-						if (id == 0x10)	// pci express cap
+						switch (id)
 						{
-							isE = true;
-							reg = pcie_config_read_word(hc, bus, device, 0, pos+2);
-							break;
+						case 0x10:		// pci express cap
+							{
+								pcieCap = pos;
+								break;
+							}
+						case 0x11:		// msix express cap
+							{
+								msixCap = pos;
+								break;
+							}
 						}
 						pos = pcie_config_read_byte(hc, bus, device, 0, pos +1);
 						if (pos < 0x40)
 							break;
 					}
-					if (!isE)
+					if (!pcieCap)
 						continue;
 				}
 //				PCIE_LOG(PCIE_PREFIX "Device(%u:%03u:%02u): %04X %04X cap: %04X\n", hcnr, bus, device, id & 0xFFFF, (id >> 16) & 0xFFFF, reg);
@@ -547,11 +553,13 @@ unsigned int pcie_find_device(pcie_device_callback callback, void* callbackData)
 				dev._internal = &internal;
 				dev.vendorId = id & 0xFFFF;
 				dev.deviceId = (id>> 16) & 0xFFFF;
-				dev.pcieCap = pos;
+				dev.pcieCap = pcieCap;
+				dev.msixCap = msixCap;
 				dev.read_config = &read_config;
 				dev.write_config = &write_config;
 				dev.read_config_word = &read_config_word;
 				dev.write_config_word = &write_config_word;
+				unsigned short reg = pcie_config_read_word(hc, bus, device, 0, pcieCap+2);
 				dev.type = (reg & 0xF0) >> 4;
 				int bar;
 				// save original value, set to -1, read back, restore original value
@@ -586,6 +594,34 @@ unsigned int pcie_find_device(pcie_device_callback callback, void* callbackData)
 							dev.barSize[bar] = 0;
 						else
 							dev.barSize[bar]  = (~dev.barSize[bar]) +1;
+					}
+				}
+				dev.msixCount = 0;
+				dev.msixTable = 0;
+				dev.msixPBA = 0;
+				if (msixCap)
+				{	// msix
+					unsigned short control = pcie_config_read_word(hc, bus, device, 0, msixCap+2);
+					dev.msixCount = ((control & 0x7FF)+1);
+					unsigned int table_offset = pcie_config_read_dword(hc, bus, device, 0, msixCap+4);
+					unsigned char bir = (unsigned char)(table_offset & (7));
+					unsigned int pba_offset = pcie_config_read_dword(hc, bus, device, 0, msixCap+8);
+					unsigned char pba_bir = (unsigned char)(pba_offset & (7));
+					if (bir<6 && pba_bir<6)
+					{
+						table_offset &= ~(7);
+						pba_offset &= ~(7);
+						unsigned char* bar = (unsigned char*)dev.bar[bir];
+						if (dev.barType[bir]==4)
+							bar+= dev.bar[bir+1] << 32;
+						dev.msixTable = (unsigned int*)(bar+table_offset);
+						if (pba_bir!=bir)
+						{
+							bar = (unsigned char*)dev.bar[pba_bir];
+							if (dev.barType[pba_bir]==4)
+								bar+= dev.bar[pba_bir+1] << 32;
+						}
+						dev.msixPBA = (unsigned long long*)(bar+pba_offset);
 					}
 				}
 				internal.hc = hc;

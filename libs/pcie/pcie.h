@@ -69,10 +69,14 @@ struct pcie_device
 	unsigned short vendorId;
 	unsigned short deviceId;
 	unsigned char pcieCap;
+	unsigned char msixCap;
 	unsigned char type;
 	unsigned int bar[6];
 	unsigned int barSize[6];
 	unsigned char barType[6];
+	unsigned short msixCount;
+	unsigned int* msixTable;
+	unsigned long long* msixPBA;
 	unsigned long (*read_config)(struct pcie_device* self, unsigned short reg);
 	void (*write_config)(struct pcie_device* self, unsigned short reg, unsigned long value);
 	unsigned short (*read_config_word)(struct pcie_device* self, unsigned short reg);

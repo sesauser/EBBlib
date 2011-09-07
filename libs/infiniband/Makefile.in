@@ -1,2 +1,2 @@
-SRCFILES += infiniband.c mlx4.c verbs.c
+SRCFILES += infiniband.c mlx4.c verbs.c bitmap.c mlx4/alloc.c mlx4/cmd.c mlx4/cq.c mlx4/eq.c mlx4/fw.c mlx4/icm.c mlx4/main.c mlx4/mr.c mlx4/pd.c mlx4/profile.c  mlx4/qp.c mlx4/reset.c mlx4/srq.c
 HDRFILES += verbs.h

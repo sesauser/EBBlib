@@ -27,7 +27,6 @@
 #ifndef _INFINIBAND_INTERNAL_H_
 #define _INFINIBAND_INTERNAL_H_
 
-#include "infiniband.h"
 #include "../pcie/pcie.h"
 
 #ifdef __cplusplus

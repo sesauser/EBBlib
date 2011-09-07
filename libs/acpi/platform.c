@@ -4,8 +4,6 @@
 #define LOG printf
 #define PREFIX "L4_map: "
 
-#define PAGE_SIZE (1 << 12)
-
 void* platform_map(void* address, L4_Word_t size)
 {
 	if (size==0)
@@ -37,12 +35,13 @@ void* platform_mapAny(L4_Word_t size)
 		LOG(PREFIX "mapping failed any size==0\n");
 		return 0;
 	}
-	if (size < PAGE_SIZE)
+	L4_Word_t requestSize = size;
+	if (requestSize < PAGE_SIZE)
 	{
-		size = PAGE_SIZE;
+		requestSize = PAGE_SIZE;
 	}
 	L4_Fpage_t rcv = L4_CompleteAddressSpace;
-	L4_Fpage_t fp = L4_Fpage(~0UL, size);
+	L4_Fpage_t fp = L4_Fpage(~0UL, requestSize);
 	L4_Set_Rights(&fp, L4_ReadWriteOnly);
 	L4_Fpage_t res = L4_Sigma0_GetPage_RcvWindow(L4_nilthread, fp, rcv);
 	if (L4_IsNilFpage(res))
@@ -50,6 +49,11 @@ void* platform_mapAny(L4_Word_t size)
 		LOG(PREFIX "mapping failed any (size %d)\n", size);
 		return 0;
 	}
+/*	requestSize = L4_Size(res);
+	if (requestSize!=size)
+	{
+		LOG(PREFIX "requested %d KiB but got %d KiB\n", size>>10, requestSize>>10);
+	}*/
 	return L4_Address(res);
 }
 

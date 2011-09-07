@@ -21,7 +21,6 @@
 #define ACPI_MAX_TABLES 128
 
 // platform defines
-#define PAGE_SIZE (1 << 12)
 #define ACPI_RSDP_SCAN_STEP             16
 #define ACPI_RSDP_CHECKSUM_LENGTH       20
 #define ACPI_RSDP_XCHECKSUM_LENGTH      36
