@@ -100,7 +100,9 @@ dial_eth(char *address) {
 	if(read_mac(macstr, dest_mac) == -1)
 		return -1;
 	handle = emalloc(sizeof(net_handle));
-	initSend(handle, address, dest_mac);
+	initCommon(handle, address);
+	initRecv(handle);
+	initSend(handle, dest_mac);
 	ixp_shadowregister(handle->fd, handle);
 	return handle->fd;
 }
@@ -108,7 +110,8 @@ dial_eth(char *address) {
 static int
 announce_eth(char *address){
 	net_handle *handle = emalloc(sizeof(net_handle));
-	initRecv(handle, address);
+	initCommon(handle, address);
+	initRecv(handle);
 	ixp_shadowregister(handle->fd, handle);
 	return handle->fd;
 }

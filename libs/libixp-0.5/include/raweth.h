@@ -33,6 +33,7 @@
 #include <netpacket/packet.h>
 #include <linux/if_ether.h>
 #include <netinet/ether.h>
+#include <stdint.h>
 //#include <string.h>
 //#include <stdlib.h>
 //#include <stdio.h>
@@ -42,24 +43,27 @@
 #define START_CODE 0xFFFFFFFE
 
 #define ETH_PAYLOAD_LEN (ETH_FRAME_LEN - sizeof(struct ethhdr))
+#define SIZED_ETH_PAYLOAD_LEN (ETH_PAYLOAD_LEN - sizeof(uint32_t)) /* size of a payload, after we subtract our own header. */
 
 typedef struct net_handle_s {
   struct sockaddr_ll socket_address;
   int fd;
   unsigned char src_mac[ETH_ALEN];
+  int hassend;
 } net_handle;
 
 typedef struct{
 	net_handle *hnd;
 	char buf[ETH_PAYLOAD_LEN];
-	int bytesleft_thisframe;
-	int bytesleft_total;
+	char *bufstart;
+	int bufsize;
 } EthFD;
 
 EthFD *EthFD_init(net_handle *hnd);
 
-void initSend(net_handle* hnd, char *iface, unsigned char *dest_mac);
-void initRecv(net_handle* hnd, char* iface);
+void initSend(net_handle* hnd, unsigned char *dest_mac);
+void initRecv(net_handle* hnd);
+void initCommon(net_handle* hnd, char* iface);
 ssize_t ethSend(EthFD *ethfd, char *buf, size_t len);
 ssize_t ethRecv(EthFD *ethfd, char *buf, size_t len);
 
