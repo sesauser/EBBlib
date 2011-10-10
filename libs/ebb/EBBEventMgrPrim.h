@@ -1,38 +1,34 @@
 #ifndef __EVENTMGR_H__
 #define __EVENTMGR_H__
 
-// All event handling ebbs must conform to these types
-// Any existing ebbs that want to handle events must be
-// frontended by an event handler EBB
+/* 
+ * All event handling ebbs must conform to these types
+ * Any existing ebbs that want to handle events must be
+ * frontended by an event handler EBB
+ */
 CObjInterface(EBBEventHandler) {
   EBBRC (*handleEvent) (void *_self);
+  EBBRC (*init) (void *_self);
 };
 
 CObject(EBBEventHandler) {
-  CObjInterface(EBBEventHandler);
+  CObjInterface(EBBEventHandler) *ft;
 };
 
-/*
-FIXME:
-o put a typedef for location somewhere
-*/
+typedef EBBEventHandlerRef *EBBEventHandlerId;
 
 CObjInterface(EBBEventMgrPrim) {
-  EBBRC (*register) (void *_self, int eventNo, EventHandlerRef handler);
-  /* 
-   * This is the first of a series of trigger operations, some will be for all 
-   * nearby nods, some will be one of the nearby nodes, this one explicity defines
-   * a node on an event to be triggered, the node is responsible for defining the core
-   * within that node.
-   */
-  EBBRC (*trigger) (void *_self, int location, int eventNo);
-  EBBRC (*allocEventNo) (void *_self, int *eventNo); /* this is global to the system */
+  EBBRC (*registerHandler) (void *_self, int eventNo, EBBEventHandlerId handler);
+  EBBRC (*triggerHandler) (void *_self, int eventNo);
+  EBBRC (*allocEventNo) (void *_self, int *eventNoPtr); /* this is global to the system */
   EBBRC (*init) (void *_self);
 };
 
 CObject(EBBEventMgrPrim) {
-  CObjInterface(EBBEventMgr);
+  CObjInterface(EBBEventMgrPrim) *ft;
 };
 
-extern EBBEventMgrPrimRef *theEBBEventMgrPrimId;
+typedef EBBEventMgrPrimRef *EBBEventMgrPrimId;
+// the ID of the one and only event manager
+extern EBBEventMgrPrimId theEBBEventMgrPrimId;
 #endif
