@@ -7,6 +7,7 @@ o how do we want to return errors.  Proposal, we adopt 1/2 of what K42
   3. a relatively unique system wide number that is ored in to the
      error
 o what do we want the makefile, configuration model to look like???
+o unit testing model
 
 Naming conventions:
 o most things are EBBs, so lets not bother with "EBB" at the beginning

@@ -43,6 +43,7 @@ EBBMgrPrimTest(void)
   EBB_LRT_printf("rc = %ld id2=%p\n", rc, id2);
 }
 
+
 void
 EBBMemMgrPrimTest(void)
 {
@@ -207,6 +208,9 @@ main (int argc, char **argv)
   EBBMemMgrPrimInit();
   EBBMemMgrPrimTest();
   
+  EBBEventMgrPrimImpInit();
+  EBBEventMgrPrimImpTest();
+
   EBBCtrTest();
 
 
