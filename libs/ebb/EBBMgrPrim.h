@@ -12,7 +12,8 @@ CObject(EBBMgrPrim) {
   EBBTransLSys *lsys;
 };
 
-extern EBBMgrPrimRef *theEBBMgrPrimId;
+typedef EBBMgrPrimRef *EBBMgrPrimId;
+extern EBBMgrPrimId theEBBMgrPrimId;
 extern void EBBMgrPrimInit(void);
 
 //FIXME: JA fix typing here on id

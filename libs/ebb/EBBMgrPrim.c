@@ -348,7 +348,7 @@ static EBBRC EBBMgrPrimMF (void *_self, EBBLTrans *lt,
 #endif
 
 // declarations of externals
-EBBMgrPrimRef *theEBBMgrPrimId;
+EBBMgrPrimId theEBBMgrPrimId;
 
 void EBBMgrPrimInit() {
   static EBBMgrPrimRoot theEBBMgrPrimRoot = { .ft = &EBBMgrPrimRoot_ftable };
@@ -358,7 +358,7 @@ void EBBMgrPrimInit() {
   theEBBMgrPrimRoot.ft->init(&theEBBMgrPrimRoot);
 
   // manually binding the EBBMgrPrim in
-  theEBBMgrPrimId = (EBBMgrPrimRef *)
+  theEBBMgrPrimId = (EBBMgrPrimId)
     EBBGTransToId(theEBBMgrPrimRoot.gsys.gTable);
 
   EBBIdBind((EBBId) theEBBMgrPrimId, 
