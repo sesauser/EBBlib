@@ -21,6 +21,7 @@
 #include "CmdMenuPrim.h"
 #include "P9FSPrim.h"
 #include "EBBAssert.h"
+#include "EBBEventMgrPrimImp.h"
 
 #include <pthread.h>
 
