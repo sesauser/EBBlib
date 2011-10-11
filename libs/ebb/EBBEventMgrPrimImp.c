@@ -42,7 +42,7 @@
  */ 
 
 typedef struct  {
-  EBBEventHandlerRef *handId;
+  EBBEventHandlerId handId;
 } HandlerInfoStruc;
 
 #define MAXEVENTS 256
@@ -55,7 +55,7 @@ CObject(EBBEventMgrPrimImp){
 
 
 static EBBRC
-EventMgrPrim_registerHandler(void *_self, int eventNo, EBBEventHandlerRef *handler)
+EventMgrPrim_registerHandler(void *_self, int eventNo, EBBEventHandlerId handler)
 {
   EBBEventMgrPrimImpRef self = _self;
   if ( (eventNo >= MAXEVENTS) || (eventNo<0) ){
@@ -130,7 +130,7 @@ EBBEventMgrPrimSetFT(EBBEventMgrPrimImpRef o)
   o->ft = &EBBEventMgrPrimImp_ftable;
 }
 
-EBBEventMgrPrimRef *theEBBEventMgrPrimId;
+EBBEventMgrPrimId theEBBEventMgrPrimId;
 
 EBBRC
 EBBEventMgrPrimImpInit()

@@ -14,7 +14,7 @@ EBBMemMgrPrimSetFT(EBBMemMgrPrimRef o) {o->ft = &EBBMemMgrPrim_ftable; }
 
 typedef EBBMemMgrPrimRef *EBBMemMgrPrimId;
 extern EBBRC EBBMemMgrPrimInit(void);
-extern EBBMemMgrPrimRef *theEBBMemMgrPrimId;
+extern EBBMemMgrPrimId theEBBMemMgrPrimId;
 
 static inline EBBRC
 EBBPrimMalloc(uval size, void *mem, EBB_MEM_POOL pool) {
