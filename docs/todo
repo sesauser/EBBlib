@@ -15,3 +15,10 @@ o most things are EBBs, so lets not bother with "EBB" at the beginning
 o We will capitalize first letter of a name that is a class
 
 
+
+cplus support:
+--------------
+1. create our own shared root implementation, it will have a handleMiss call
+2. bind root to table i.e., from CObjEBBBind, reference to the root object, and a pointer to the root object's handleMiss function
+3. implement handleMiss for root similar to CObjEBBRootShared_handleMiss
+o 
