@@ -12,6 +12,7 @@ CObject(EBBMgrPrim) {
   EBBTransLSys *lsys;
 };
 
+extern void *NULLId;
 extern EBBMgrPrimRef *theEBBMgrPrimId;
 extern void EBBMgrPrimInit(void);
 

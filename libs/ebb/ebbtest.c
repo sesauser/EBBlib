@@ -1,3 +1,24 @@
+/******************************************************************************
+* Copyright (C) 2011 by Project SESA, Boston University
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+* THE SOFTWARE.
+*****************************************************************************/
 #include "../base/include.h"
 #include "../base/types.h"
 #include "../base/lrtio.h"
@@ -6,7 +27,7 @@
 #include "CObjEBB.h"
 #include "MsgMgr.h"
 #include "EBBMgrPrim.h"
-#include "EBBMemMgr.h"
+#include "EBBMemMgr.h" 
 #include "EBBMemMgrPrim.h"
 #include "EBBCtr.h"
 #include "EBBCtrPrim.h"
@@ -32,15 +53,24 @@ void
 EBBMgrPrimTest(void)
 {
   EBBId id1, id2;
+  EBBCtrPrimId c = NULLId;
+
   EBBRC rc;
 
-  EBB_LRT_printf("0: EBBId_DREF(theEBBMgrPrimId)=%p: ", EBBId_DREF(theEBBMgrPrimId));
+  EBB_LRT_printf("0: EBBId_DREF(theEBBMgrPrimId)=%p: ",
+		 EBBId_DREF(theEBBMgrPrimId));
   rc = EBBAllocLocalPrimId(&id1);
   EBB_LRT_printf("rc = %ld id1=%p\n", rc, id1);
 
-  EBB_LRT_printf("1: EBBId_DREF(theEBBMgrPrimId)=%p: ", EBBId_DREF(theEBBMgrPrimId));
+  EBB_LRT_printf("1: EBBId_DREF(theEBBMgrPrimId)=%p: ", 
+		 EBBId_DREF(theEBBMgrPrimId));
   rc = EBBAllocLocalPrimId(&id2);
   EBB_LRT_printf("rc = %ld id2=%p\n", rc, id2);
+
+  //EBB_LRT_printf("ERROR: gtable miss on a local-only EBB\n");
+  rc = EBBCALL(c, inc);
+  EBB_LRT_printf("NULLId test: rc = %ld\n", rc);
+  EBBRCAssert((rc!=EBBRC_OK));  
 }
 
 void
@@ -222,7 +252,7 @@ main (int argc, char **argv)
     P9FSTest(argv[3]);
 #endif
 
-  P9FSTest("tcp!*!12345");
+  //  P9FSTest("tcp!*!12345");
 
   return 0;
 }
