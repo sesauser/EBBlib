@@ -12,7 +12,7 @@ static int have_fdshadow_init = 0;
 static void ensure_fdshadow_init(void){
 	if(have_fdshadow_init)
 		return;
-	void *hash = emalloc(sizeof(void *) * HASH_SIZE);
+	void *hash = emallocz(sizeof(void *) * HASH_SIZE);
 	initmap(&fdshadow, HASH_SIZE, hash);
 	have_fdshadow_init = 1;
 }
