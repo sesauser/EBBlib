@@ -231,11 +231,11 @@ P9FSTest(char *address)
 void
 EthTest(void)
 {
+#if 0
   EthMgrId ethmgr;
   EthEBBProtoId proto;
 
   // turn this on when ready to start integrating
-#if 0
   EthMgrPrimCreate(&ethmgr);
   EthEBBProtoPrimCreate(ethmgr, &proto);
 #endif
