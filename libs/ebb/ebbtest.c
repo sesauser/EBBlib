@@ -231,15 +231,12 @@ P9FSTest(char *address)
 void
 EthTest(void)
 {
-#if 0
   EthMgrId ethmgr;
   EthEBBProtoId proto;
 
   // turn this on when ready to start integrating
   EthMgrPrimCreate(&ethmgr);
   EthEBBProtoPrimCreate(ethmgr, &proto);
-#endif
-
 }
   
 int 
@@ -263,7 +260,9 @@ main (int argc, char **argv)
 
   EBBCtrTest();
 
+#if 0
   EthTest();
+#endif
 
   if (argc == 3) {
     EBB9PClientTest(argv[1], argv[2]);
