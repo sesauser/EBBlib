@@ -232,8 +232,11 @@ EthTest(void)
   EthMgrId ethmgr;
   EthEBBProtoId proto;
 
+  // turn this on when ready to start integrating
+#if 0
   EthMgrPrimCreate(&ethmgr);
   EthEBBProtoPrimCreate(ethmgr, &proto);
+#endif
 
 }
   
