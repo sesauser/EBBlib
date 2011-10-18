@@ -5,6 +5,7 @@ LIBS:=$($(SESA_LRT)_libs) -lpcap -L$(IXPDIR)/lib -lixp
 #CFLAGS := -O4 
 CFLAGS += -g 
 SRCS := EBBMgrPrim.c CObjEBBRootShared.c CObjEBB.c \
+	EBBEventMgrPrimImp.c \
 	EBBCtrPrimDistributed.c CObjEBBRootMulti.c \
 	sys/defFT.c EBBMemMgrPrim.c EBBCtrPrim.c EBB9PClientPrim.c \
 	EBB9PFilePrim.c P9FSPrim.c CmdMenuPrim.c ebbtest.c \

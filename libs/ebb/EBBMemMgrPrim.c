@@ -50,7 +50,7 @@ CObjInterface(EBBMemMgr) EBBMemMgrPrim_ftable = {
   init, alloc, free
 };
 
-EBBMemMgrPrimRef *theEBBMemMgrPrimId;
+EBBMemMgrPrimId theEBBMemMgrPrimId;
 
 EBBRC
 EBBMemMgrPrimInit()

@@ -47,6 +47,7 @@
 #include "EthEBBProto.h"
 #include "EthEBBProtoPrim.h"
 #include "EBBAssert.h"
+#include "EBBEventMgrPrimImp.h"
 
 #include <pthread.h>
 
@@ -77,6 +78,7 @@ EBBMgrPrimTest(void)
   EBB_LRT_printf("NULLId test: rc = %ld\n", rc);
   EBBRCAssert((rc!=EBBRC_OK));  
 }
+
 
 void
 EBBMemMgrPrimTest(void)
@@ -256,6 +258,9 @@ main (int argc, char **argv)
   EBBMemMgrPrimInit();
   EBBMemMgrPrimTest();
   
+  EBBEventMgrPrimImpInit();
+  EBBEventMgrPrimImpTest();
+
   EBBCtrTest();
 
   EthTest();
