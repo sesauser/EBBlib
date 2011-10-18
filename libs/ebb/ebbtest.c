@@ -41,6 +41,11 @@
 #include "CmdMenu.h"
 #include "CmdMenuPrim.h"
 #include "P9FSPrim.h"
+#include "EthTypeMgr.h"
+#include "EthMgr.h"
+#include "EthMgrPrim.h"
+#include "EthEBBProto.h"
+#include "EthEBBProtoPrim.h"
 #include "EBBAssert.h"
 
 #include <pthread.h>
@@ -221,6 +226,17 @@ P9FSTest(char *address)
   EBBRCAssert(rc);
 }
 
+void
+EthTest(void)
+{
+  EthMgrId ethmgr;
+  EthEBBProtoId proto;
+
+  EthMgrPrimCreate(&ethmgr);
+  EthEBBProtoPrimCreate(ethmgr, &proto);
+
+}
+  
 int 
 main (int argc, char **argv) 
 {
@@ -239,6 +255,7 @@ main (int argc, char **argv)
   
   EBBCtrTest();
 
+  EthTest();
 
   if (argc == 3) {
     EBB9PClientTest(argv[1], argv[2]);

@@ -1,14 +1,17 @@
 IXPDIR=../libixp-0.5
 CFLAGS:=-Wall -I$(IXPDIR)/include -D SESA_ARCH=$(SESA_ARCH) -D SESA_LRT=$(SESA_LRT)
-LIBS:=-lpthread -L$(IXPDIR)/lib -lixp
+ulnx_libs:=-lpthread -lpcap
+LIBS:=$($(SESA_LRT)_libs) -lpcap -L$(IXPDIR)/lib -lixp
 #CFLAGS := -O4 
 CFLAGS += -g 
 SRCS := EBBMgrPrim.c CObjEBBRootShared.c CObjEBB.c \
 	EBBCtrPrimDistributed.c CObjEBBRootMulti.c \
 	sys/defFT.c EBBMemMgrPrim.c EBBCtrPrim.c EBB9PClientPrim.c \
 	EBB9PFilePrim.c P9FSPrim.c CmdMenuPrim.c ebbtest.c \
-	EthEBBProtoPrim.c \
-	sys/arch/$(SESA_ARCH)/defFT.S
+	EthMgrPrim.c EthEBBProtoPrim.c \
+	sys/arch/$(SESA_ARCH)/defFT.S \
+	lrt/$(SESA_LRT)/pic.c lrt/$(SESA_LRT)/ethlib.c
+
 OBJS := $(patsubst %.c, %.o, $(filter %.c, $(SRCS)))
 OBJS += $(patsubst %.S, %.o, $(filter %.S, $(SRCS)))
 DEPS := $(patsubst %.c, %.d, $(filter %.c, $(SRCS)))

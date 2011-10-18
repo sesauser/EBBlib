@@ -52,22 +52,18 @@
  * the following macros to save and restore them.
  */
 
-#define FPR_SAVE_AREA_SIZE   (65*8)    /* one extra 8-byte space */
+#define FPR_SAVE_AREA_SIZE   (64*8)    
 
 /* save floating point registers in area pointed to by ptr.
    reg is a spare register for computation */
 
 #define SAVE_FLOAT_(ptr,reg)								\
-	mov	ptr,reg;			/* copy of pointer to compute on */ 	\
-	add	$8,reg;				/* if 8, move to 16; if 16, move to 8 */\
-	andq	$0xfffffffffffffff0,reg;	/* take back to 16-byte alignment */	\
+  	mov	ptr,reg;			/* copy of pointer to compute on */ \
 	fwait;										\
 	fxsave	(reg);				/* save floating point registers */
 
 #define RESTORE_FLOAT_(ptr,reg)			  					    \
 	mov	ptr,reg;			/* copy of pointer to compute on */	    \
-	add	$8,reg;				/* if 8, advance to 16; if 16, move to 8 */ \
-	andq	$0xfffffffffffffff0,reg;	/* take back to 16-byte alignment */        \
 	fxrstor	(reg); 	 			/* restore fp registers */
 
 
@@ -77,11 +73,7 @@
 	pushq	%rsi;	 \
 	pushq	%rcx;	 \
 	movq	psReg, %rsi;			/* get address to move from */	 \
-	add	$8,%rsi;			/* if 8, move to 16; if 16, move to 8 */	 \
-	andq	$0xfffffffffffffff0,%rsi;	/* take back to 16-byte alignment */		 \
 	leaq	3*8(%rsp), %rdi;		/* get address to move to (on stack) */	 \
-	add	$8,%rdi;			/* if 8, move to 16; if 16, move to 8 */	 \
-	andq	$0xfffffffffffffff0,%rdi;	/* take back to 16-byte alignment */		 \
 	mov	$64,%rcx;			/* count of 64 floating point registers */	 \
 	rep;	 										\
 	movsq;					/* do the move -- 64 times from %rsi to %rdi */	 \
