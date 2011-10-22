@@ -196,7 +196,6 @@ globalMissHandler(uval arg0, uval arg1, uval arg2, uval arg3,
 static EBBRC EBBMgrPrimERRMF (void *_self, EBBLTrans *lt,
 			      FuncNum fnum, EBBMissArg arg) {
   EBBMissFunc mf;
-  EBB_LRT_printf("ERROR: gtable miss on a local-only EBB\n");
   if (isLocalEBB(EBBLTransToGTrans(lt))) {
     EBB_LRT_printf("ERROR: gtable miss on a local-only EBB\n");
   } else if (!MsgAvailable) {
