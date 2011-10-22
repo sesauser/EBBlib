@@ -9,6 +9,8 @@
 #include "EBBMgrPrim.h"
 #include "EBBMemMgr.h"
 #include "EBBMemMgrPrim.h"
+#include "EBBEventMgrPrim.h"
+#include "EBBEventMgrPrimImp.h"
 #include "CObjEBBUtils.h"
 #include "CObjEBBRoot.h"
 #include "CObjEBBRootShared.h"
@@ -26,7 +28,7 @@ CObject(EthEBBProtoTypeMgr) {
   CObjInterface(EthTypeMgr) *ft;
   CObjectDefine(EthEBBProtoPrim) *ebbproto;
   uval rcnt;
-} typeMgr;
+};
 
 CObject(EthEBBProtoPrim) {
   CObjInterface(EthEBBProto) *ft;

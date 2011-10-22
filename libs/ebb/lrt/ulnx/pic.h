@@ -1,7 +1,7 @@
 #ifndef __LRT_ULNX_PIC_H__
 #define __LRT_ULNX_PIC_H__
 
-typedef void (*lrt_pic_handler)(uval val);
+typedef void (*lrt_pic_handler)(void);
 typedef uval lrt_pic_src;
 
 extern uval lrt_pic_firstvec(void);

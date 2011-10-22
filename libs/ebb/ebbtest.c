@@ -29,6 +29,8 @@
 #include "EBBMgrPrim.h"
 #include "EBBMemMgr.h" 
 #include "EBBMemMgrPrim.h"
+#include "EBBEventMgrPrim.h"
+#include "EBBEventMgrPrimImp.h"
 #include "EBBCtr.h"
 #include "EBBCtrPrim.h"
 #include "EBBCtrPrimDistributed.h"
@@ -47,7 +49,6 @@
 #include "EthEBBProto.h"
 #include "EthEBBProtoPrim.h"
 #include "EBBAssert.h"
-#include "EBBEventMgrPrimImp.h"
 
 #include <pthread.h>
 
@@ -232,11 +233,17 @@ void
 EthTest(void)
 {
   EthMgrId ethmgr;
+#if 0 
   EthEBBProtoId proto;
+#endif
 
   // turn this on when ready to start integrating
   EthMgrPrimCreate(&ethmgr);
+
+#if 0
   EthEBBProtoPrimCreate(ethmgr, &proto);
+#endif
+
 }
   
 int 
@@ -256,27 +263,15 @@ main (int argc, char **argv)
   EBBMemMgrPrimTest();
   
   EBBEventMgrPrimImpInit();
-  EBBEventMgrPrimImpTest();
+  //  EBBEventMgrPrimImpTest();
 
   EBBCtrTest();
 
-#if 0
+#if 1
   EthTest();
 #endif
 
-  if (argc == 3) {
-    EBB9PClientTest(argv[1], argv[2]);
-    return 0;
-  }
-#if 0
-  else if (argc > 2) 
-    EBB9PClientTest(argv[1], argv[2]);
-
-  if (argc > 3) 
-    P9FSTest(argv[3]);
-#endif
-
-  //  P9FSTest("tcp!*!12345");
+  EBBEventMgrEventLoop();
 
   return 0;
 }

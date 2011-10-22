@@ -18,10 +18,10 @@ CObject(EBBEventHandler) {
 typedef EBBEventHandlerRef *EBBEventHandlerId;
 
 CObjInterface(EBBEventMgrPrim) {
-  EBBRC (*registerHandler) (void *_self, int eventNo, EBBEventHandlerId handler);
-  EBBRC (*triggerHandler) (void *_self, int eventNo);
-  EBBRC (*allocEventNo) (void *_self, int *eventNoPtr); /* this is global to the system */
-  EBBRC (*init) (void *_self);
+  EBBRC (*registerHandler) (void *_self, uval eventNo,
+			    EBBEventHandlerId handler, 
+			    uval isrc);
+  EBBRC (*allocEventNo) (void *_self, uval *eventNoPtr);
 };
 
 CObject(EBBEventMgrPrim) {
@@ -31,4 +31,5 @@ CObject(EBBEventMgrPrim) {
 typedef EBBEventMgrPrimRef *EBBEventMgrPrimId;
 // the ID of the one and only event manager
 extern EBBEventMgrPrimId theEBBEventMgrPrimId;
+
 #endif

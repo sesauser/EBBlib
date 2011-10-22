@@ -100,7 +100,7 @@ lrt_pic_mapvec(lrt_pic_src s, uval vec, lrt_pic_handler h)
   int rc;
   int sfd = (int)s;
 
-  if (pic.vecs[vec].h == 0) return -1;
+  if (vec >= NUM_MAPPABLE_VEC || pic.vecs[vec].h == 0) return -1;
 
   pic.vecs[vec].h = h;
   rc = dup2(sfd, pic.vecs[vec].fd);
@@ -138,7 +138,7 @@ lrt_pic_loop(void)
       for (i = FIRST_VEC,v=0; i <= pic.maxfd; i++, v++) {
 	if (FD_ISSET(i, &efds) || (FD_ISSET(i, &rfds))) {
 	  if (pic.vecs[v].h) {
-	    pic.vecs[v].h(v);
+	    pic.vecs[v].h();
 	  } else {
 	    fprintf(stderr, "ERROR: %s: spurious interrupt on %d\n", __func__, i);
 	  }

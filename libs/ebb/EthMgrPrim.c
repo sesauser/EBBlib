@@ -10,6 +10,8 @@
 #include "EBBMgrPrim.h"
 #include "EBBMemMgr.h"
 #include "EBBMemMgrPrim.h"
+#include "EBBEventMgrPrim.h"
+#include "EBBEventMgrPrimImp.h"
 #include "CObjEBBUtils.h"
 #include "CObjEBBRoot.h"
 #include "CObjEBBRootShared.h"
@@ -28,9 +30,17 @@
 
 #define NUMETHTYPES (1<<(sizeof(uval16) * 8))
 
+CObject(EvHdlr) {
+  CObjInterface(EBBEventHandler) *ft;
+}; 
+
 CObject(EthMgrPrim) {
   CObjInterface(EthMgr) *ft;
   EthTypeMgrId typeMgrs[NUMETHTYPES];
+  CObjectDefine(EvHdlr) evHdlr;
+  EBBEventHandlerId hdlrId;
+  uval ev;
+  uval rcnt;
 };
 
 
@@ -46,23 +56,33 @@ EthMgrPrim_bind(void *_self, uval16 type, EthTypeMgrId id)
   return EBBRC_GENERIC_FAILURE;
 }
 
+#define ContainingCOPtr(addr, ctype, field) \
+  ((EthMgrPrim *)(((uval)addr) - (__builtin_offsetof(ctype, field))))
+  
+static EBBRC 
+EthMgrPrim_handleEvent(void *_self)
+{
+  EthMgrPrim *self = ContainingCOPtr(_self,EthMgrPrim,evHdlr);
+  ethlib_nic_readpkt();
+  self->rcnt++;
+  return EBBRC_OK;
+}
+  
 CObjInterface(EthMgr) EthMgrPrim_ftable = {
   .init = EthMgrPrim_init,
-  .bind = EthMgrPrim_bind
+  .bind = EthMgrPrim_bind,
+  {
+    .handleEvent = EthMgrPrim_handleEvent
+  }
 };
 
 static inline void 
 EthMgrPrimSetFT(EthMgrPrimRef o) 
 { 
   o->ft = &EthMgrPrim_ftable; 
+  o->evHdlr.ft = &(EthMgrPrim_ftable.EBBEventHandler_if);
 }
 
-static void
-pic_handler(uval val) 
-{
-  //  fprintf(stderr, "%s: %ld\n", __func__, val);
-  ethlib_nic_readpkt();
-}
 
 EBBRC
 EthMgrPrimCreate(EthMgrId *id) 
@@ -71,7 +91,6 @@ EthMgrPrimCreate(EthMgrId *id)
   EthMgrPrimRef repRef;
   CObjEBBRootSharedRef rootRef;
   lrt_pic_src nicisrc;
-  uval vec;
 
   EBBPrimMalloc(sizeof(*repRef), &repRef, EBB_MEM_DEFAULT);
   EBBPrimMalloc(sizeof(*rootRef), &rootRef, EBB_MEM_DEFAULT);
@@ -80,6 +99,7 @@ EthMgrPrimCreate(EthMgrId *id)
   EthMgrPrimSetFT(repRef);
 
   bzero(repRef->typeMgrs, sizeof(repRef->typeMgrs));
+  repRef->rcnt=0;
 
   rootRef->ft->init(rootRef, repRef);
   
@@ -89,20 +109,24 @@ EthMgrPrimCreate(EthMgrId *id)
   rc = CObjEBBBind(*id, rootRef); 
   EBBRCAssert(rc);
 
-  // this needs to be done somewhere else
-  rc = lrt_pic_init();
+  // setup the EthMgr on a second id that services the EventHander Interface
+  EBBPrimMalloc(sizeof(*rootRef), &rootRef, EBB_MEM_DEFAULT);
+  CObjEBBRootSharedSetFT(rootRef);
+  rootRef->ft->init(rootRef, &(repRef->evHdlr));
+  rc = EBBAllocLocalPrimId(&(repRef->hdlrId));
   EBBRCAssert(rc);
-
-  rc = lrt_pic_allocvec(&vec);
+  rc = CObjEBBBind(repRef->hdlrId, rootRef);
+  EBBRCAssert(rc);
+ 
+  rc = EBBCALL(theEBBEventMgrPrimId, allocEventNo, &(repRef->ev));
   EBBRCAssert(rc);
 
   rc = ethlib_nic_init("eth1", &nicisrc);
   EBBRCAssert(rc);
 
-  rc = lrt_pic_mapvec(nicisrc, vec, pic_handler);
+  rc = EBBCALL(theEBBEventMgrPrimId, registerHandler, repRef->ev, 
+	       repRef->hdlrId, nicisrc);
   EBBRCAssert(rc);
-
-  lrt_pic_loop();
   
   return EBBRC_OK;
 }
