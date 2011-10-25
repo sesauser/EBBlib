@@ -245,7 +245,61 @@ EthTest(void)
 #endif
 
 }
+
+#if 0
+CObject(Boot) {
+  CObjInterface(MsgHdlr) *ft;
+  uval numEventLocations;
+  uval numMemDomains;
+};
   
+typedef BootRef *BootId;
+
+static EBBRC 
+Boot_main(void *_self)
+{
+  __attributed__ ((unused)) BootRef self = (BootRef)_self
+
+  // gather boot facts
+  
+  // now update the core EBBs with this facts
+
+  // We are now ready to get going for real
+
+  // the last thing we do is start up some external connection 
+  // in this case we are hardcoding the start up of an ethernet device
+  EthMgrInit();
+  return EBBRC_OK;
+
+}
+
+CObjInterface(MsgHdlr) Boot_ftable = {
+  .msg0 = boot_main;
+};
+
+static void
+TriggerBootEvent(void)
+{
+  EBBRC rc;
+  static Boot bootRep;
+  static CObjEBBRootShared bootRoot;
+  BootId bid;
+  uval no;
+
+  CObjEBBRootSsharedSetFT(bootRoot);
+  bootRep.ft = &Boot_ftable;  
+  bootRoot.ft->init(&bootRep);
+  rc = EBBAllocLocalPrimId(&bid);
+  EBBRCAssert(rc);
+  rc = CObjEBBBind(bid, &bootRoot); 
+  EBBRCAssert(rc);
+
+  EBBCALL(theEBBEventMgrPrimId, allocEventNo, &no);
+  EBBCALL(theEBBEventMgrPrimId, registerHandler, no, bid, mg
+
+}
+#endif
+
 int 
 main (int argc, char **argv) 
 {
@@ -253,8 +307,14 @@ main (int argc, char **argv)
   /* Three main EBB's are EBBMgrPrim, EBBEventMgrPrim EBBMemMgrPrim    */
   /* There creation and initialization are interdependent and requires */
   /* fancy footwork */
-
-  pthread_key_create(&ELKey, NULL);
+#if 0
+  // this code goes in main:lrt/ulnx/start.c
+  lrt_pic_init();
+  // lrt_mem_init(); lrt_trans_init();
+  lrt_pic_ipivec(EBBEventMgrResetVec);
+  lrt_pic_ipi(lrt_pic_myid);
+  lrt_pic_loop(lrt_pic_myid);  // rest of startup happens on EBBEventMgrResetVec
+#endif
   
   EBBMgrPrimInit();
   EBBMgrPrimTest();
@@ -263,11 +323,10 @@ main (int argc, char **argv)
   EBBMemMgrPrimTest();
   
   EBBEventMgrPrimImpInit();
-  //  EBBEventMgrPrimImpTest();
-
-  EBBCtrTest();
-
-#if 1
+  
+#if 0
+  TriggerBootEvent();
+#else 
   EthTest();
 #endif
 

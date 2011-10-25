@@ -26,6 +26,9 @@ ebbtest: $(OBJS) ebbtest.mk $(IXPDIR)/lib/libixp.a
 objctest: objctest.m clrBTB.o $(OBJS) sys/arch/amd64/defFT.o
 	gcc-mp-4.4 -fgnu-runtime $(CFLAGS) objctest.m clrBTB.o $(OBJS) -lobjc sys/arch/amd64/defFT.o -o $@ 
 
+pictest: lrt/$(SESA_LRT)/pic.c lrt/$(SESA_LRT)/pic.h
+	gcc $(CFLAGS) -DPIC_TEST lrt/$(SESA_LRT)/pic.c -o pictest -lpthread
+
 $(IXPDIR)/lib/libixp.a:
 	make -C $(IXPDIR)
 

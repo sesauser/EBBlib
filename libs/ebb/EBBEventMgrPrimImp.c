@@ -358,6 +358,7 @@ EventMgrPrim_registerHandler(void *_self, uval eventNo,
 			     uval isrc)
 {
   EBBEventMgrPrimImpRef self = _self;
+  lrt_pic_set targets;
 
   if ( (eventNo >= MAXEVENTS) || (eventNo<0) ){
     return EBBRC_BADPARAMETER;
@@ -372,8 +373,15 @@ EventMgrPrim_registerHandler(void *_self, uval eventNo,
   // install handler in event table
   self->handlerInfo[eventNo].id = handler;
 
+  // for the moment we are hard coding that when 
+  // you map a vector it is only active on this el
+#if 0
+  lrt_pic_set_clear(&targets);
+  lrt_pic_set_add(&targets, MYEL);
+#endif
+
   // map vector in pic
-  if (lrt_pic_mapvec((lrt_pic_src)isrc, eventNo, vfTbl[eventNo])<0) {
+  if (lrt_pic_mapvec((lrt_pic_src)isrc, eventNo, vfTbl[eventNo], targets)<0) {
     self->handlerInfo[eventNo].id = NULLId;
     return EBBRC_BADPARAMETER;
   }
@@ -437,7 +445,7 @@ EBBEventMgrPrimImpInit(void)
 void
 EBBEventMgrEventLoop(void)
 {
-  lrt_pic_loop();
+  lrt_pic_loop(0);
 }
 
 #if 0
