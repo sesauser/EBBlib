@@ -13,19 +13,23 @@
 #include "../../../base/types.h"
 #include "pic.h"
 
+extern lrt_pic_handler EBBstart;
+
 #ifdef __APPLE__
 pthread_key_t lrt_pic_myid_pthreadkey;
 #else
 __thread lrt_pic_id lrt_pic_myid;
 #endif
+lrt_pic_id lrt_pic_firstid;
+lrt_pic_id lrt_pic_lastid;
 
 #define NUM_LPICS_CONFIGED 4
 
-#define FIRST_VEC        16
+#define FIRST_VECFD      16
 #define NUM_MAPPABLE_VEC 15
 // reserve 2 : 1 for ipi and 1 additional
 #define NUM_RES_VEC      2
-#define RES0_VEC        (FIRST_VEC + NUM_MAPPABLE_VEC)
+#define RES0_VEC        (NUM_MAPPABLE_VEC)
 #define RES1_VEC        (RES0 + 1) 
 #define IPI_VEC         (RES0_VEC)
 #define NUM_VEC          (NUM_MAPPABLE_VEC + NUM_RES_VEC) 
@@ -57,6 +61,7 @@ struct LPic {
   uval aux;
   uval ipiStatus;
 } lpics[LRT_PIC_MAX_PICS];
+
 
 static uval
 lock(void)
@@ -93,13 +98,14 @@ wakeupall(void)
 {
   lrt_pic_id i;
   assert(pic.lpiccnt == pic.numlpics);
-  for (i=LRT_PIC_FIRST_PIC_ID; i<pic.numlpics; i++) wakeup(i);
+  for (i=lrt_pic_firstid; i<=lrt_pic_lastid; i++) wakeup(i);
 }
+
 
 uval 
 lrt_pic_firstvec(void) 
 { 
-  return FIRST_VEC; 
+  return 0; 
 }
 
 uval 
@@ -109,37 +115,42 @@ lrt_pic_numvec(void)
 }
     
 sval
-lrt_pic_init()
+lrt_pic_init(uval numlpics, lrt_pic_handler h)
 {
-  int fd[FIRST_VEC];
+  int fd[FIRST_VECFD];
   int i=0;
+  uval id;
   struct sigaction sa;
   sigset_t blockset;
 
-
   // confirm sanity of pic configuration 
   assert(LRT_PIC_MAX_PICS/64 * 64 == LRT_PIC_MAX_PICS);
-
-  // lrt_pic_myid setup
-#ifdef __APPLE__
-  pthread_key_create(&lrt_pic_myid_pthreadkey, NULL);
-#endif
+  assert(numlpics <= LRT_PIC_MAX_PICS);
 
   // initialize all pic state to zero
   bzero(&pic, sizeof(pic));
   bzero(lpics, sizeof(lpics));
 
-  pic.numlpics = NUM_LPICS_CONFIGED;
+  // setup basic global facts
+  lrt_pic_firstid = LRT_PIC_FIRST_PIC_ID;
+  lrt_pic_lastid  = numlpics-1;
+  pic.numlpics = numlpics;
 
-  assert(pic.numlpics <= LRT_PIC_MAX_PICS);
-  
+  // lrt_pic_myid setup for first pic (thread of execution of init)
+#ifdef __APPLE__
+  pthread_key_create(&lrt_pic_myid_pthreadkey, NULL);
+  pthread_setspecific(lrt_pic_myid_pthreadkey, (void *)lrt_pic_firstid);
+#else
+  lrt_pic_myid = lrt_pic_firstid;
+#endif
+
   // initialized working fd array 
   bzero(&fd, sizeof(fd));
   fd[i] = open("/dev/null", O_RDONLY);
 
   // get us to the FIRST_VEC fd by opening
   // fds until we get to FIRST_VEC
-  while (fd[i] < (FIRST_VEC-1)) {
+  while (fd[i] < (FIRST_VECFD-1)) {
     i++;
     fd[i] = dup(fd[0]);
   };
@@ -147,12 +158,12 @@ lrt_pic_init()
   // reserve fds for our vectors
   for (i=0; i<NUM_VEC; i++) {
     pic.vecs[i].fd=dup(fd[0]);
-    if (pic.vecs[i].fd != (FIRST_VEC+i)) return -1;
+    if (pic.vecs[i].fd != (FIRST_VECFD+i)) return -1;
   }
    
   // close and free fd's that we allocated to get to
   // FIRST_VEC
-  for (i=0; i<FIRST_VEC; i++) if(fd[i]) close(fd[i]);
+  for (i=0; i<FIRST_VECFD; i++) if(fd[i]) close(fd[i]);
 
   // explicity setup fdset so that we are not paying attention
   // to any vectors at start... vectors are added when they are mapped
@@ -170,6 +181,26 @@ lrt_pic_init()
   sa.sa_flags = 0;
   sigemptyset(&(sa.sa_mask));
   sigaction(SIGINT, &sa, NULL);
+
+  // setup where the initial ipi will be directed to
+  lrt_pic_mapipi(h);
+
+  // record this the thread id of this thread as lpic 
+  lpics[lrt_pic_myid].aux = (uval)pthread_self();
+  // start up threads for any other lpics
+  for (id=lrt_pic_firstid+1; id<=lrt_pic_lastid; id++) {
+    if (pthread_create((pthread_t *)(&lpics[id].aux), 
+		       NULL, (void *(*)(void*))lrt_pic_loop, 
+		       (void *)id) != 0) {
+      perror("pthread_create");
+      return -1;
+    }
+  }
+
+  lrt_pic_ipi(lrt_pic_myid);
+  lrt_pic_loop(lrt_pic_myid);
+
+  assert(0);
 
   return 1;
 }
@@ -212,7 +243,7 @@ lrt_pic_mapipi(lrt_pic_handler h)
 sval
 lrt_pic_ipi(lrt_pic_id target)
 {
-  if (target>LRT_PIC_LAST_PIC_ID) return -1;
+  if (target>lrt_pic_lastid) return -1;
   // FIXME: probably need to make this at least volatile
   lpics[target].ipiStatus = 1;
   wakeup(target);
@@ -258,6 +289,22 @@ lrt_pic_mapvec(lrt_pic_src s, uval vec, lrt_pic_handler h, lrt_pic_set pics)
   return rc;
 }
 
+static void
+bind_proc(uval p)
+{
+#if 0
+  cpu_set_t mask;
+
+  CPU_ZERO( &mask );
+  CPU_SET(p, &mask);
+  if (sched_setaffinity(0, sizeof(mask), &mask) == -1) {
+    perror("ERROR: Could not set CPU Affinity");
+  }
+#else
+  fprintf(stderr, "%s: NYI\n", __func__);
+#endif
+}
+
 // conncurrent pic loop
 // one loop for each local pic
 // each pic will wake up on any interrupt occurring but only dispatches
@@ -280,6 +327,7 @@ lrt_pic_loop(lrt_pic_id myid)
   lrt_pic_myid = myid;
 #endif
 
+  bind_proc(lrt_pic_myid);
 
   lrt_pic_set_clear(mymask);
   lrt_pic_set_add(mymask, myid);
@@ -321,7 +369,7 @@ lrt_pic_loop(lrt_pic_id myid)
 
     if (lpic->ipiStatus)  pic.vecs[IPI_VEC].h();
 
-    for (i = FIRST_VEC,v=0; i <= pic.maxfd; i++, v++) {
+    for (i = FIRST_VECFD,v=0; i <= pic.maxfd; i++, v++) {
       if ((FD_ISSET(i, &efds) || (FD_ISSET(i, &rfds)))
 	  && lrt_pic_set_test(pic.vecs[i].set, myid)) {
 	if (pic.vecs[v].h) {
@@ -337,37 +385,28 @@ lrt_pic_loop(lrt_pic_id myid)
 }
 
 #ifdef PIC_TEST
+#include <unistd.h>
+#include <stdlib.h>
 
-void ipihdler(void)
+void
+ipihdlr(void)
 {
   fprintf(stderr, "%ld", lrt_pic_myid);
   fflush(stderr);
   sleep(2);
   lrt_pic_ackipi();
   // pass the ipi along to the next lrt
-  lrt_pic_ipi((lrt_pic_myid+1)%pic.numlpics);
+  lrt_pic_ipi((lrt_pic_myid+1)%(lrt_pic_lastid+1));
 }
 
 int
-main(void)
+main(int argc, char **argv)
 {
-  uval i;
+  uval cores=1;
 
-  lrt_pic_init();
-  lrt_pic_mapipi(ipihdler);
-
-  lpics[0].aux = (uval)pthread_self();
-  for (i=1; i<NUM_LPICS_CONFIGED; i++) {
-    if (pthread_create((pthread_t *)(&lpics[i].aux), 
-		       NULL, (void *(*)(void*))lrt_pic_loop, 
-		       (void *)i) != 0) {
-      perror("pthread_create");
-      return -1;
-    }
-  }
-
-  lrt_pic_ipi(0);
-  lrt_pic_loop(0);
+  if (argc>1) cores=atoi(argv[1]);
+  lrt_pic_init(cores, ipihdlr);
   return -1;
 }
+
 #endif

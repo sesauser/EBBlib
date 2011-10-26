@@ -10,15 +10,17 @@ SRCS := EBBMgrPrim.c CObjEBBRootShared.c CObjEBB.c \
 	sys/defFT.c EBBMemMgrPrim.c EBBCtrPrim.c EBB9PClientPrim.c \
 	EBB9PFilePrim.c P9FSPrim.c CmdMenuPrim.c ebbtest.c \
 	EthMgrPrim.c EthEBBProtoPrim.c \
+	EBBStart.c \
 	sys/arch/$(SESA_ARCH)/defFT.S \
-	lrt/$(SESA_LRT)/pic.c lrt/$(SESA_LRT)/ethlib.c
+	lrt/$(SESA_LRT)/pic.c lrt/$(SESA_LRT)/ethlib.c \
+	lrt/$(SESA_LRT)/start.c
 
 OBJS := $(patsubst %.c, %.o, $(filter %.c, $(SRCS)))
 OBJS += $(patsubst %.S, %.o, $(filter %.S, $(SRCS)))
 DEPS := $(patsubst %.c, %.d, $(filter %.c, $(SRCS)))
 DEPS += $(patsubst %.S, %.d, $(filter %.S, $(SRCS)))
 
-all: ebbtest
+all: ebbtest pictest
 
 ebbtest: $(OBJS) ebbtest.mk $(IXPDIR)/lib/libixp.a
 	gcc $(CFLAGS) $(OBJS) $(LIBS) -o $@
@@ -53,4 +55,5 @@ EBBObj.o: EBBObj.H EBBObj.c
 	g++ $(CFLAGS) -c EBBObj.c -o EBBObj.o
 
 clean:
-	-rm $(wildcard $(OBJS) $(DEPS) ebbtest)
+	-rm $(wildcard $(OBJS) $(DEPS) ebbtest pictest)
+	make -C $(IXPDIR) clean

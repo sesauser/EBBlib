@@ -434,19 +434,8 @@ EBBEventMgrPrimImpInit(void)
 
   rc = CObjEBBBind(theEBBEventMgrPrimId, rootRef); 
   //  EBBRCAssert(rc);
-
-  // this needs to be done somewhere else
-  rc = lrt_pic_init();
-  EBBRCAssert(rc);
-
   return EBBRC_OK;
 };
-
-void
-EBBEventMgrEventLoop(void)
-{
-  lrt_pic_loop(0);
-}
 
 #if 0
 static EBBRC 

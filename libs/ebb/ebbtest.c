@@ -295,42 +295,7 @@ TriggerBootEvent(void)
   EBBRCAssert(rc);
 
   EBBCALL(theEBBEventMgrPrimId, allocEventNo, &no);
-  EBBCALL(theEBBEventMgrPrimId, registerHandler, no, bid, mg
+  EBBCALL(theEBBEventMgrPrimId, registerHandler, no, bid, mg);
 
 }
 #endif
-
-int 
-main (int argc, char **argv) 
-{
-
-  /* Three main EBB's are EBBMgrPrim, EBBEventMgrPrim EBBMemMgrPrim    */
-  /* There creation and initialization are interdependent and requires */
-  /* fancy footwork */
-#if 0
-  // this code goes in main:lrt/ulnx/start.c
-  lrt_pic_init();
-  // lrt_mem_init(); lrt_trans_init();
-  lrt_pic_ipivec(EBBEventMgrResetVec);
-  lrt_pic_ipi(lrt_pic_myid);
-  lrt_pic_loop(lrt_pic_myid);  // rest of startup happens on EBBEventMgrResetVec
-#endif
-  
-  EBBMgrPrimInit();
-  EBBMgrPrimTest();
-
-  EBBMemMgrPrimInit();
-  EBBMemMgrPrimTest();
-  
-  EBBEventMgrPrimImpInit();
-  
-#if 0
-  TriggerBootEvent();
-#else 
-  EthTest();
-#endif
-
-  EBBEventMgrEventLoop();
-
-  return 0;
-}
