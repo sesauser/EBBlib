@@ -54,8 +54,6 @@
 
 #define EBBCALL(id, method, ...) COBJ_EBBCALL(id, method, ##__VA_ARGS__)
 
-pthread_key_t ELKey;
-
 void 
 EBBMgrPrimTest(void)
 {

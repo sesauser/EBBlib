@@ -4,6 +4,42 @@
 #include __LRTINC(pic.h)
 #include __LRTINC(EBBAssert.h)
 
+#include "../cobj/cobj.h"
+#include "EBBTypes.h"
+#include "CObjEBB.h"
+#include "MsgMgr.h"
+#include "EBBMgrPrim.h"
+#include "EBBMemMgr.h" 
+#include "EBBMemMgrPrim.h"
+#include "EBBEventMgrPrim.h"
+#include "EBBEventMgrPrimImp.h"
+#include "EthTypeMgr.h"
+#include "EthMgr.h"
+#include "EthMgrPrim.h"
+#include "EthEBBProto.h"
+#include "EthEBBProtoPrim.h"
+#include "EBBAssert.h"
+
+pthread_key_t ELKey;
+static void 
+kludge(void)
+{
+  EBBRC rc;
+  EthMgrId ethmgr;
+
+    EBB_LRT_printf("%s: start\n", __func__);
+  pthread_setspecific(ELKey, (void *)lrt_pic_myid);
+
+  EBBMgrPrimInit();
+  rc = EBBMemMgrPrimInit();
+  EBBRCAssert(rc);
+  rc = EBBEventMgrPrimImpInit();
+  EBBRCAssert(rc);
+  EBB_LRT_printf("%s: about to call init eth\n", __func__);
+  EthMgrPrimCreate(&ethmgr);
+  EBBRCAssert(rc);
+}
+
 
 void
 EBBStart(void)
@@ -17,14 +53,11 @@ EBBStart(void)
   // then invoke a method of BootInfo object on first message
   // this object should gather boot information (sysfacts and boot args)
   // and then get full blown primitive core EBBS up (perhaps by a hot swap)
-
-  EBB_LRT_printf("%s: ADD RESET OF INIT CODE HERE!\n", __func__);
+#if 0
+  EBB_LRT_printf("%s: ADD REST OF INIT CODE HERE!\n", __func__);
   LRT_EBBAssert(0);
-
-  // Righ now this should be the equivalent to:
-  // 
-  // EBBMgrPrimInit();
-  // EBBMemMgrPrimInit();
-  // EBBEventMgrPrimImpInit();
-
+#else
+  EBB_LRT_printf("%s: start\n", __func__);
+  kludge();
+#endif
 }

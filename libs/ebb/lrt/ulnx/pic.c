@@ -30,8 +30,9 @@ lrt_pic_id lrt_pic_lastid;
 // reserve 2 : 1 for ipi and 1 additional
 #define NUM_RES_VEC      2
 #define RES0_VEC        (NUM_MAPPABLE_VEC)
-#define RES1_VEC        (RES0 + 1) 
+#define RES1_VEC        (RES0_VEC + 1) 
 #define IPI_VEC         (RES0_VEC)
+#define RST_VEC         (RES1_VEC)
 #define NUM_VEC          (NUM_MAPPABLE_VEC + NUM_RES_VEC) 
 
 #ifndef FD_COPY
@@ -56,10 +57,12 @@ struct Pic {
 
 //FIXME: Do we want to pad these to cacheline size
 struct LPic {
-  lrt_pic_id id;
   struct timespec periodic;
+  lrt_pic_set mymask;
+  lrt_pic_id id;
   uval aux;
   uval ipiStatus;
+  uval resetStatus;
 } lpics[LRT_PIC_MAX_PICS];
 
 
@@ -101,6 +104,17 @@ wakeupall(void)
   for (i=lrt_pic_firstid; i<=lrt_pic_lastid; i++) wakeup(i);
 }
 
+void
+lrt_pic_enable(uval vec)
+{
+  lrt_pic_set_add(pic.vecs[vec].set, lrt_pic_myid);
+}
+
+void
+lrt_pic_disable(uval vec)
+{
+  if (vec != RST_VEC) lrt_pic_set_remove(pic.vecs[vec].set, lrt_pic_myid);
+}
 
 uval 
 lrt_pic_firstvec(void) 
@@ -143,7 +157,7 @@ lrt_pic_init(uval numlpics, lrt_pic_handler h)
 #else
   lrt_pic_myid = lrt_pic_firstid;
 #endif
-
+  
   // initialized working fd array 
   bzero(&fd, sizeof(fd));
   fd[i] = open("/dev/null", O_RDONLY);
@@ -182,10 +196,12 @@ lrt_pic_init(uval numlpics, lrt_pic_handler h)
   sigemptyset(&(sa.sa_mask));
   sigaction(SIGINT, &sa, NULL);
 
+  assert(!lrt_pic_set_test(lpics[lrt_pic_myid].mymask,lrt_pic_myid));
   // setup where the initial ipi will be directed to
-  lrt_pic_mapipi(h);
+  lrt_pic_mapreset(h);
 
   // record this the thread id of this thread as lpic 
+  lrt_pic_set_add(lpics[lrt_pic_myid].mymask, lrt_pic_myid);
   lpics[lrt_pic_myid].aux = (uval)pthread_self();
   // start up threads for any other lpics
   for (id=lrt_pic_firstid+1; id<=lrt_pic_lastid; id++) {
@@ -197,7 +213,8 @@ lrt_pic_init(uval numlpics, lrt_pic_handler h)
     }
   }
 
-  lrt_pic_ipi(lrt_pic_myid);
+  // initiate a reset to get things going once the loop is up
+  lrt_pic_reset();
   lrt_pic_loop(lrt_pic_myid);
 
   assert(0);
@@ -236,9 +253,19 @@ lrt_pic_allocvec(uval *vec)
 sval 
 lrt_pic_mapipi(lrt_pic_handler h)
 {
+
   pic.vecs[IPI_VEC].h = h;
   return 1;
 }
+
+sval 
+lrt_pic_mapreset(lrt_pic_handler h)
+{
+
+  pic.vecs[RST_VEC].h = h;
+  return 1;
+}
+
 
 sval
 lrt_pic_ipi(lrt_pic_id target)
@@ -250,11 +277,20 @@ lrt_pic_ipi(lrt_pic_id target)
   return 1;
 }
 
+sval
+lrt_pic_reset()
+{
+  lpics[lrt_pic_myid].resetStatus = 1;
+  wakeup(lrt_pic_myid);
+  return 1;
+}
+
 void
 lrt_pic_ackipi(void)
 {
   lpics[lrt_pic_myid].ipiStatus = 0;
 }
+
 
 // FIXME: 1: make the vectors lpic specific
 //        2: lpic loop need not monitor fd's that it is not mapped too
@@ -263,7 +299,7 @@ lrt_pic_ackipi(void)
 //    Perhaps just provide two interfaces for common cases of this, 'on' and 
 //    'all': lrt_pic_mapvec, lrt_pic_mapvec_on, lrt_pic_mapvec_all
 sval
-lrt_pic_mapvec(lrt_pic_src s, uval vec, lrt_pic_handler h, lrt_pic_set pics)
+lrt_pic_mapvec(lrt_pic_src s, uval vec, lrt_pic_handler h)
 {
   int i;
   int sfd = (int)s;
@@ -281,7 +317,6 @@ lrt_pic_mapvec(lrt_pic_src s, uval vec, lrt_pic_handler h, lrt_pic_set pics)
   assert(i == pic.vecs[vec].fd);
   FD_SET(i, &pic.fdset);
   if (i>pic.maxfd) pic.maxfd=i;
-  lrt_pic_set_copy(pics, pic.vecs[vec].set);
   wakeupall();
 
  done:
@@ -315,7 +350,6 @@ lrt_pic_loop(lrt_pic_id myid)
   fd_set rfds, efds;
   int v,i, rc;
   sigset_t emptyset;
-  lrt_pic_set mymask;
   struct LPic *lpic = lpics + myid;
 
 #ifdef __APPLE__
@@ -326,14 +360,14 @@ lrt_pic_loop(lrt_pic_id myid)
 #else
   lrt_pic_myid = myid;
 #endif
-
+  lrt_pic_set_add(lpic->mymask, myid);
   bind_proc(lrt_pic_myid);
-
-  lrt_pic_set_clear(mymask);
-  lrt_pic_set_add(mymask, myid);
 
   lock(); pic.lpiccnt++; unlock();
 
+  // start with ipi and reset enabled on all lpics so that we can get going via an ipi
+  lrt_pic_enable(IPI_VEC);
+  lrt_pic_enable(RST_VEC);
   // wait for all lpics to be up before we get going
   while (pic.lpiccnt != pic.numlpics);
   //  printf("%d: pic.lpiccnt=%ld\n", lrt_pic_myid, pic.lpiccnt);
@@ -367,7 +401,15 @@ lrt_pic_loop(lrt_pic_id myid)
     }
 #endif
 
-    if (lpic->ipiStatus)  pic.vecs[IPI_VEC].h();
+   if (lpic->resetStatus) {
+     lpic->resetStatus=0;
+     pic.vecs[RST_VEC].h();
+   }
+
+    if (lpic->ipiStatus && lrt_pic_set_test(pic.vecs[IPI_VEC].set, myid)) {
+      lrt_pic_disable(IPI_VEC);
+      pic.vecs[IPI_VEC].h();
+    }
 
     for (i = FIRST_VECFD,v=0; i <= pic.maxfd; i++, v++) {
       if ((FD_ISSET(i, &efds) || (FD_ISSET(i, &rfds)))

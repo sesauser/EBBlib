@@ -34,6 +34,14 @@ lrt_pic_set_add(lrt_pic_set s, lrt_pic_id i)
   s[i/64] |= mask;
 }
 
+inline static void 
+lrt_pic_set_remove(lrt_pic_set s, lrt_pic_id i)
+{
+  if (i>LRT_PIC_MAX_PIC_ID) return;
+  uval64 mask = ~((uval64)1 << (i%64));
+  s[i/64] &= mask;
+}
+
 inline static uval 
 lrt_pic_set_test(lrt_pic_set s, lrt_pic_id i)
 {
@@ -68,9 +76,12 @@ extern uval lrt_pic_numvec(void);
 extern sval lrt_pic_init(uval numlpics, lrt_pic_handler h);
 extern sval lrt_pic_loop(lrt_pic_id id);
 extern sval lrt_pic_allocvec(uval *vec);
-extern sval lrt_pic_mapvec(lrt_pic_src src, uval vec, lrt_pic_handler h, lrt_pic_set pics);
+extern sval lrt_pic_mapvec(lrt_pic_src src, uval vec, lrt_pic_handler h);
 extern sval lrt_pic_mapipi(lrt_pic_handler h);
+extern sval lrt_pic_mapreset(lrt_pic_handler h);
+extern sval lrt_pic_reset(void);
 extern sval lrt_pic_ipi(lrt_pic_id targets);
 extern void lrt_pic_ackipi(void);
-
+extern void lrt_pic_enable(uval vec);
+extern void lrt_pic_disable(uval vec);
 #endif

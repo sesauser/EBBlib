@@ -22,6 +22,7 @@ lrt_trans_init(void)
 // first code to be runnining on an interrupt
 void lrt_start(void)
 {
+  fprintf(stderr, "%s: start!\n", __func__);
   lrt_mem_init();
   lrt_trans_init();
   EBBStart();
@@ -32,6 +33,7 @@ main(int argc, char **argv)
 {
   uval cores=1;
 
+  fprintf(stderr, "%s: start!\n", __func__);
   if (argc>1) cores=atoi(argv[1]);
   lrt_pic_init(cores, lrt_start);
   return -1;

@@ -13,7 +13,7 @@ SRCS := EBBMgrPrim.c CObjEBBRootShared.c CObjEBB.c \
 	EBBStart.c \
 	sys/arch/$(SESA_ARCH)/defFT.S \
 	lrt/$(SESA_LRT)/pic.c lrt/$(SESA_LRT)/ethlib.c \
-	lrt/$(SESA_LRT)/start.c
+	lrt/$(SESA_LRT)/lrt_start.c
 
 OBJS := $(patsubst %.c, %.o, $(filter %.c, $(SRCS)))
 OBJS += $(patsubst %.S, %.o, $(filter %.S, $(SRCS)))
