@@ -40,6 +40,18 @@ kludge(void)
   EBBRCAssert(rc);
 }
 
+void
+ipihdlr(void)
+{
+  lrt_pic_ackipi();
+  fprintf(stderr, "%ld", lrt_pic_myid);
+  fflush(stderr);
+  sleep(2);
+  lrt_pic_enableipi();
+  // pass the ipi along to the next lrt
+  lrt_pic_ipi((lrt_pic_myid+1)%(lrt_pic_lastid+1));
+}
+
 
 void
 EBBStart(void)
@@ -59,5 +71,7 @@ EBBStart(void)
 #else
   EBB_LRT_printf("%s: start\n", __func__);
   kludge();
+  lrt_pic_mapipi(ipihdlr);
+  lrt_pic_ipi(lrt_pic_firstid);
 #endif
 }

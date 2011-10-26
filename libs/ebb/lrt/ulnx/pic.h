@@ -83,5 +83,7 @@ extern sval lrt_pic_reset(void);
 extern sval lrt_pic_ipi(lrt_pic_id targets);
 extern void lrt_pic_ackipi(void);
 extern void lrt_pic_enable(uval vec);
+extern void lrt_pic_enableipi(void);
 extern void lrt_pic_disable(uval vec);
+extern void lrt_pic_disableipi(void);
 #endif

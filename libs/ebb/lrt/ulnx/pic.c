@@ -116,6 +116,19 @@ lrt_pic_disable(uval vec)
   if (vec != RST_VEC) lrt_pic_set_remove(pic.vecs[vec].set, lrt_pic_myid);
 }
 
+void
+lrt_pic_enableipi(void)
+{
+  lrt_pic_enable(IPI_VEC);
+}
+
+void
+lrt_pic_disableipi(void)
+{
+  lrt_pic_disable(IPI_VEC);
+}
+
+
 uval 
 lrt_pic_firstvec(void) 
 { 
@@ -366,7 +379,7 @@ lrt_pic_loop(lrt_pic_id myid)
   lock(); pic.lpiccnt++; unlock();
 
   // start with ipi and reset enabled on all lpics so that we can get going via an ipi
-  lrt_pic_enable(IPI_VEC);
+  lrt_pic_enableipi();
   lrt_pic_enable(RST_VEC);
   // wait for all lpics to be up before we get going
   while (pic.lpiccnt != pic.numlpics);
@@ -407,7 +420,7 @@ lrt_pic_loop(lrt_pic_id myid)
    }
 
     if (lpic->ipiStatus && lrt_pic_set_test(pic.vecs[IPI_VEC].set, myid)) {
-      lrt_pic_disable(IPI_VEC);
+      lrt_pic_disableipi();
       pic.vecs[IPI_VEC].h();
     }
 
