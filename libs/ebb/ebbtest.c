@@ -25,7 +25,6 @@
 #include "../cobj/cobj.h"
 #include "EBBTypes.h"
 #include "CObjEBB.h"
-#include "MsgMgr.h"
 #include "EBBMgrPrim.h"
 #include "EBBMemMgr.h" 
 #include "EBBMemMgrPrim.h"
@@ -181,6 +180,7 @@ EBBCtrTest(void)
 #endif
 }
 
+#if 0 				/* FIXME: disabled 9P */
 void
 EBB9PClientTest(char *address, char *path)
 {
@@ -226,6 +226,7 @@ P9FSTest(char *address)
   
   EBBRCAssert(rc);
 }
+#endif
 
 void
 EthTest(void)

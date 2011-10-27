@@ -7,13 +7,16 @@ CFLAGS += -g
 SRCS := EBBMgrPrim.c CObjEBBRootShared.c CObjEBB.c \
 	EBBEventMgrPrimImp.c \
 	EBBCtrPrimDistributed.c CObjEBBRootMulti.c \
-	sys/defFT.c EBBMemMgrPrim.c EBBCtrPrim.c EBB9PClientPrim.c \
-	EBB9PFilePrim.c P9FSPrim.c CmdMenuPrim.c ebbtest.c \
+	sys/defFT.c \
+	CmdMenuPrim.c ebbtest.c \
 	EthMgrPrim.c EthEBBProtoPrim.c \
 	EBBStart.c \
 	sys/arch/$(SESA_ARCH)/defFT.S \
 	lrt/$(SESA_LRT)/pic.c lrt/$(SESA_LRT)/ethlib.c \
-	lrt/$(SESA_LRT)/lrt_start.c
+	lrt/$(SESA_LRT)/lrt_start.c EBBMemMgrPrim.c EBBCtrPrim.c
+#	MsgMgrPrim.c \
+#	EBB9PClientPrim.c \
+#	EBB9PFilePrim.c P9FSPrim.c 
 
 OBJS := $(patsubst %.c, %.o, $(filter %.c, $(SRCS)))
 OBJS += $(patsubst %.S, %.o, $(filter %.S, $(SRCS)))

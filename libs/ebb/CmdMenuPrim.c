@@ -5,7 +5,6 @@
 #include "sys/trans.h" //FIXME: move EBBTransLSys out of this header
 #include "CObjEBB.h"
 #include "EBBTypes.h"
-#include "MsgMgr.h"
 #include "EBBMgrPrim.h"
 #include "EBBMemMgr.h"
 #include "EBBMemMgrPrim.h"
@@ -90,6 +89,7 @@ bufParse(char *src, uval sl, char *dest, uval dl, char sep)
 EBB9PClientId the9PClient = NULL;
 uval EBBNodeId = 0;
 
+#if 0 				/* FIXME: disabled 9P */
 static sval
 CmdMenuPrim_doConnect(CmdMenuPrimRef self, char *buf, uval len)
 {
@@ -176,7 +176,6 @@ CmdMenuPrim_doConnect(CmdMenuPrimRef self, char *buf, uval len)
   EBBRCAssert(rc);
 
   EBBCALL(theEBBMgrPrimId, InitMessageMgr, (EBBId) p, self->nodespath, self->nodespathlen);
-
   EBBNodeId = atol(self->nodeid);
 
   return 1;
@@ -193,6 +192,7 @@ testMsgHandler(uval arg0, uval arg1, uval arg2, uval arg3,
   *rcode = (uval)0xdeadbeefdeadbeef;
   return EBBRC_OK;
 }
+#endif
 
 
 static sval
@@ -204,7 +204,7 @@ CmdMenuPrim_doRun(CmdMenuPrimRef self, char *buf, uval len)
   uval val;
 
   if ((len > 9 && bufEq(buf, "ctr_create", 10))) {
-    EBBCtrPrimGlobalSharedCreate(&ctr);
+    EBB_LRT_printf("-----------ERROR GOT RID GLOBAL SHIT\n");
     EBB_LRT_printf("%lX\n", (uval)ctr);
     sprintf(tmpbuf, "%lX\n", (uval)ctr);
     EBBCALL(self->stdout, write, tmpbuf, strlen(tmpbuf), &n);
@@ -223,49 +223,6 @@ CmdMenuPrim_doRun(CmdMenuPrimRef self, char *buf, uval len)
     EBBCALL(self->stdout, write, tmpbuf, strlen(tmpbuf), &n);
   }
     
-#if 0
-  //Feel free to comment this out, just using it to test the global EBB stuff
-  EBBCtrPrimId ctr;
-  uval v;
-  EBBRC rc;
-  uval rcode;
-
-  rc = EBBMessageNode(2, testMsgHandler, &rcode);
-  EBB_LRT_printf("%s, MsgNode: rc=%ld rcode=0x%lx\n", __func__, rc, rcode);
-
-  rc = EBBMessageNode1(2, testMsgHandler, 1, &rcode);
-  EBB_LRT_printf("%s, MsgNode: rc=%ld rcode=0x%lx\n", __func__, rc, rcode);
-
-  rc = EBBMessageNode2(2, testMsgHandler, 1, 2, &rcode);
-  EBB_LRT_printf("%s, MsgNode: rc=%ld rcode=0x%lx\n", __func__, rc, rcode);
-
-  rc = EBBMessageNode3(2, testMsgHandler, 1, 2, 3, &rcode);
-  EBB_LRT_printf("%s, MsgNode: rc=%ld rcode=0x%lx\n", __func__, rc, rcode);
-
-  rc = EBBMessageNode4(2, testMsgHandler, 1, 2, 3, 4, &rcode);
-  EBB_LRT_printf("%s, MsgNode: rc=%ld rcode=0x%lx\n", __func__, rc, rcode);
-
-  rc = EBBMessageNode5(2, testMsgHandler, 1, 2, 3, 4, 5, &rcode);
-  EBB_LRT_printf("%s, MsgNode: rc=%ld rcode=0x%lx\n", __func__, rc, rcode);
-
-  rc = EBBMessageNode6(2, testMsgHandler, 1, 2, 3, 4, 5, 6, &rcode);
-  EBB_LRT_printf("%s, MsgNode: rc=%ld rcode=0x%lx\n", __func__, rc, rcode);
-
-  rc = EBBMessageNode7(2, testMsgHandler, 1, 2, 3, 4, 5, 6, 7, &rcode);
-  EBB_LRT_printf("%s, MsgNode: rc=%ld rcode=0x%lx\n", __func__, rc, rcode);
-
-  rc = EBBMessageNode8(2, testMsgHandler, 1, 2, 3, 4, 5, 6, 7, 8, &rcode);
-  EBB_LRT_printf("%s, MsgNode: rc=%ld rcode=0x%lx\n", __func__, rc, rcode);
-#endif
-
-#if 0
-  EBBCtrPrimGlobalSharedCreate(&ctr);
-  EBBCALL(ctr,val,&v);
-  EBB_LRT_printf("global counter val = %ld\n",v);
-  EBBCALL(ctr,inc);
-  EBBCALL(ctr,val,&v);
-  EBB_LRT_printf("global counter val = %ld\n",v);
-#endif
   return EBBRC_OK;
 }
 
@@ -294,7 +251,9 @@ CmdMenuPrim_do9pr(CmdMenuPrimRef self, char *buf, uval len)
 
   EBB_LRT_printf("%s: BEGIN: address=%s path=%s|\n", __func__, addr, path);
 
+#if 0 				/* FIXME: disabled 9P */
   EBB9PClientPrimCreate(&p);
+#endif
 
   rc = EBBCALL(p, mount, addr);
   EBBRCAssert(rc);
@@ -322,11 +281,14 @@ EBBRC CmdMenuPrim_doCmd(void *_self, char *cmdbuf, uval n,
 		 __func__,  _self, cmdbuf, n, rtndata, *rdlen);
 
   //I think here you need to decrement n when you send it to the next function
+#if 0 				/* FIXME: disabled 9P */
   if ((n > 2 && bufEq(cmdbuf, "c ", 2)))            
     rc = CmdMenuPrim_doConnect(self, &cmdbuf[2], n-2);
   else if ((n > 8 && bufEq(cmdbuf, "connect ", 8))) 
     rc = CmdMenuPrim_doConnect(self, &cmdbuf[8], n-8);
-  else if ((n > 2 && bufEq(cmdbuf, "r ", 2)))       
+  else 
+#endif
+  if ((n > 2 && bufEq(cmdbuf, "r ", 2)))       
     rc = CmdMenuPrim_doRun(self, &cmdbuf[2], n-2);
   else if ((n > 4 && bufEq(cmdbuf, "run ", 4)))     
     rc = CmdMenuPrim_doRun(self, &cmdbuf[4], n-4);

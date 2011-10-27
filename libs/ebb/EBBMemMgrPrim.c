@@ -3,7 +3,6 @@
 #include "../cobj/cobj.h"
 #include "EBBTypes.h"
 #include "CObjEBB.h"
-#include "MsgMgr.h"
 #include "EBBMgrPrim.h"
 #include "CObjEBBUtils.h"
 #include "CObjEBBRoot.h"

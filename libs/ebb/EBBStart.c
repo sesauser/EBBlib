@@ -7,7 +7,6 @@
 #include "../cobj/cobj.h"
 #include "EBBTypes.h"
 #include "CObjEBB.h"
-#include "MsgMgr.h"
 #include "EBBMgrPrim.h"
 #include "EBBMemMgr.h" 
 #include "EBBMemMgrPrim.h"

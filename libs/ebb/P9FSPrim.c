@@ -123,6 +123,7 @@ static EBBRC
 P9FSPrim_open(void *_self, Ixp9Req *r)
 {
   EBB_LRT_printf("%s: START\n", __func__);
+#if 0 // OLD MSG STUFF
   if (r->fid->qid.path == QMSG) {
     r->fid->aux =  malloc(sizeof(struct MsgMgrReply));
     if (r->fid->aux == NULL) {
@@ -132,7 +133,9 @@ P9FSPrim_open(void *_self, Ixp9Req *r)
     EBB_LRT_printf("%s: QMSG: +malloc MsgMgrReply: %p\n",
 		   __func__, r->fid->aux);
     bzero(r->fid->aux, sizeof(struct MsgMgrReply));
-  } else if (r->fid->qid.path == QCMD) {
+  } else 
+#endif
+    if (r->fid->qid.path == QCMD) {
     r->fid->aux =  malloc(sizeof(struct CmdData));
     if (r->fid->aux == NULL) {
       respond(r, "out of memory");
@@ -171,8 +174,11 @@ dostat(P9FSPrimRef self, IxpStat *st, int path, void *aux)
   st->qid.path = path;
   st->mode = self->files[path].mode;
   st->name = self->files[path].name;
+#if 0 // OLD MESSAGE STUFF
   if (path == QMSG) st->length = sizeof(struct MsgMgrReply);
-  else if (path == QCMD && aux) {
+  else 
+#endif
+    if (path == QCMD && aux) {
     struct CmdData *cdata = aux;
     st->length = (cdata) ? cdata->len : 0;
   } else st->length = 0;
@@ -261,6 +267,7 @@ P9FSPrim_read(void *_self, Ixp9Req *r)
     }
     break;
   } 
+#if 0 // OLD MESSAGE STuFF
   case QMSG: {
     struct MsgMgrReply *reply = r->fid->aux;
     assert(reply);
@@ -281,6 +288,7 @@ P9FSPrim_read(void *_self, Ixp9Req *r)
     }
     break;
   }
+#endif
   }
   
   respond(r, NULL);
@@ -310,6 +318,7 @@ EBBRC P9FSPrim_write(void *_self, Ixp9Req *r)
     EBBRCAssert(rc);
     break;
   }
+#if 0 // OLD MSG STUFF
   case QMSG: {
     struct MsgMgrReply *reply = r->fid->aux;
     assert(reply);
@@ -324,6 +333,7 @@ EBBRC P9FSPrim_write(void *_self, Ixp9Req *r)
     EBBRCAssert(rc);
     break;
   }
+#endif
   }
   respond(r, NULL);
   

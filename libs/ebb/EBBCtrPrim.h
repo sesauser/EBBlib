@@ -16,7 +16,5 @@ static inline void
 EBBCtrPrimSetFT(EBBCtrPrimRef o) { o->ft = &EBBCtrPrim_ftable; }
 
 extern EBBRC EBBCtrPrimSharedCreate(EBBCtrPrimId *id);
-extern EBBRC EBBCtrPrimGlobalSharedCreate(EBBCtrPrimId *id);
-
 
 #endif

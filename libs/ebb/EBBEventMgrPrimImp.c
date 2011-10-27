@@ -6,7 +6,6 @@
 #include "EBBTypes.h"
 #include "EBBAssert.h"
 #include "CObjEBB.h"
-#include "MsgMgr.h"
 #include "EBBMgrPrim.h"
 #include "CObjEBBUtils.h"
 #include "CObjEBBRoot.h"
