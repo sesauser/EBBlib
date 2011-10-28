@@ -78,6 +78,7 @@ void mlx4_cq_completion(struct mlx4_device *dev, u32 cqn)
 {
 	struct mlx4_cq *cq;
 
+	int idx = cqn & (dev->caps.num_cqs - 1);
 	cq = 0;//radix_tree_lookup(&mlx4_priv(dev)->cq_table.tree,
 		//	       cqn & (dev->caps.num_cqs - 1));
 	if (!cq) {
@@ -212,9 +213,9 @@ int mlx4_cq_alloc(struct mlx4_device *dev, int nent, struct mlx4_mtt *mtt,
 	err = mlx4_table_get(dev, &cq_table->cmpt_table, cq->cqn);
 	if (err)
 		goto err_put;
-
+// TODO use radix tree for faster lookup on event, see mlx4_cq_completion, mlx4_cq_event
 //	spin_lock_irq(&cq_table->lock);
-	err = 1;//radix_tree_insert(&cq_table->tree, cq->cqn, cq);
+//	err = 1;//radix_tree_insert(&cq_table->tree, cq->cqn, cq);
 //	spin_unlock_irq(&cq_table->lock);
 	if (err)
 		goto err_cmpt_put;

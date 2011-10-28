@@ -10,5 +10,6 @@ struct msix_entry
 };
 
 extern int enable_msix(struct pcie_device* self, struct msix_entry* entries, int entryCount);
+extern void disable_msix(struct pcie_device* dev);
 
 #endif

@@ -398,6 +398,7 @@ enum ibv_qp_type {
 	IBV_QPT_RC = 2,
 	IBV_QPT_UC,
 	IBV_QPT_UD
+	,IBV_QPT_XRC
 };
 
 struct ibv_qp_cap {

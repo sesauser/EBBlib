@@ -169,18 +169,30 @@ void mlx4_bitmap_cleanup(struct mlx4_bitmap *bitmap)
 	//kfree(bitmap->table);
 }
 
+static int get_order(unsigned long size)
+{
+	int order;
+
+	size = (size - 1) >> (PAGE_SHIFT - 1);
+	order = -1;
+	do {
+		size >>= 1;
+		order++;
+	} while (size);
+	return order;
+}
+
 /*
  * Handling for queue buffers -- we allocate a bunch of memory and
  * register it in a memory region at HCA virtual address 0.  If the
  * requested size is > max_direct, we split the allocation into
  * multiple pages, so we don't require too much contiguous memory.
  */
-
 int mlx4_buf_alloc(struct mlx4_device *dev, int size, int max_direct,
 		   struct mlx4_buf *buf)
 {
-	u64 t;DRIVER_LOG(DRIVER_PREFIX "mlx4_buf_alloc() not implemented\n"); return 1;
-/*
+	u64 t;
+
 	if (size <= max_direct) {
 		buf->nbufs        = 1;
 		buf->npages       = 1;
@@ -191,6 +203,7 @@ int mlx4_buf_alloc(struct mlx4_device *dev, int size, int max_direct,
 			return 1;
 
 		buf->direct.map = buf->direct.buf;//t;
+		t = (u64)buf->direct.map;
 
 		while (t & ((1 << buf->page_shift) - 1)) {
 			--buf->page_shift;
@@ -234,8 +247,7 @@ int mlx4_buf_alloc(struct mlx4_device *dev, int size, int max_direct,
 			if (!buf->direct.buf)
 				goto err_free;
 		}*/
-/*	}
-*/
+	}
 	return 0;
 
 err_free:
@@ -266,24 +278,23 @@ void mlx4_buf_free(struct mlx4_device *dev, int size, struct mlx4_buf *buf)
 
 static struct mlx4_db_pgdir *mlx4_alloc_db_pgdir(struct device *dma_device)
 {
-	DRIVER_LOG(DRIVER_PREFIX "mlx4_alloc_db_pgdir() not implemented\n"); return 0;
-/*	struct mlx4_db_pgdir *pgdir;
+	struct mlx4_db_pgdir *pgdir;
 
-	pgdir = kzalloc(sizeof *pgdir, GFP_KERNEL);
+	pgdir = platform_mapAny(sizeof *pgdir);
 	if (!pgdir)
-		return NULL;
+		return 0;
 
 	bitmap_fill(pgdir->order1, MLX4_DB_PER_PAGE / 2);
 	pgdir->bits[0] = pgdir->order0;
 	pgdir->bits[1] = pgdir->order1;
-	pgdir->db_page = dma_alloc_coherent(dma_device, PAGE_SIZE,
-					    &pgdir->db_dma, GFP_KERNEL);
+	pgdir->db_page = platform_mapAny(PAGE_SIZE);
+	pgdir->db_dma = pgdir->db_page;
 	if (!pgdir->db_page) {
-		kfree(pgdir);
-		return NULL;
+		//kfree(pgdir);
+		return 0;
 	}
 
-	return pgdir;*/
+	return pgdir;
 }
 
 static int mlx4_alloc_db_from_pgdir(struct mlx4_db_pgdir *pgdir,
@@ -336,7 +347,7 @@ int mlx4_db_alloc(struct mlx4_device *dev, struct mlx4_db *db, int order)
 	list_add(&pgdir->list, &dev->pgdir_list);
 
 	/* This should never fail -- we just allocated an empty page: */
-//	WARN_ON(mlx4_alloc_db_from_pgdir(pgdir, db, order));
+	mlx4_alloc_db_from_pgdir(pgdir, db, order);
 
 out:
 //	mutex_unlock(&priv->pgdir_mutex);

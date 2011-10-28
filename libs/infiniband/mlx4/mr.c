@@ -448,7 +448,7 @@ int mlx4_buf_write_mtt(struct mlx4_device *dev, struct mlx4_mtt *mtt,
 
 	err = mlx4_write_mtt(dev, mtt, 0, buf->npages, page_list);
 
-	//kfree(page_list);
+	platform_unmap(page_list);
 	return err;
 }
 

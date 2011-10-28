@@ -46,10 +46,12 @@
 */
 #include "../list.h"
 #include "../atomic.h"
+#include "../bitmap.h"
 #include "../completion.h"
 #include "../../pcie/pcie.h"
 //#include "doorbell.h"
 #include "log.h"
+#include <verbs.h>
 
 #define DRV_NAME	"mlx4_core"
 #define DRV_VERSION	"0.01"
@@ -342,8 +344,8 @@ enum {
 
 struct mlx4_db_pgdir {
 	struct list_head	list;
-//	DECLARE_BITMAP(order0, MLX4_DB_PER_PAGE);
-//	DECLARE_BITMAP(order1, MLX4_DB_PER_PAGE / 2);
+	DECLARE_BITMAP(order0, MLX4_DB_PER_PAGE);
+	DECLARE_BITMAP(order1, MLX4_DB_PER_PAGE / 2);
 	unsigned long	       *bits[2];
 	u32		       *db_page;
 	void*		db_dma;
@@ -747,6 +749,7 @@ struct mlx4_steer {
 };
 
 struct mlx4_device {
+	struct ibv_device ibv_device;
 	struct pcie_device pcie;
 	unsigned long		flags;
 	struct mlx4_caps	caps;

@@ -46,11 +46,14 @@
 #define GFP_HIGHUSER 0
 #define __GFP_NOWARN 0
 
+#include <l4/kdebug.h>
+#include <l4/kip.h>
 #include "mlx4.h"
 #include "fw.h"
 #include "icm.h"
 
 #include "cmd.h"
+#include "../../pcie/msix.h"
 
 struct workqueue_struct *mlx4_wq;
 
@@ -388,58 +391,6 @@ out:
 */
 static int mlx4_load_fw(struct mlx4_device *dev)
 {
-/*	void* mem = platform_mapAny(dev->fw.fw_pages*PAGE_SIZE);
-	dev->fw.fw_icm = mem;
-	if (mem==NULL)
-	{
-		DRIVER_LOG(DRIVER_PREFIX "Couldn't allocate FW area, aborting.\n");
-		return 1;
-	}
-	u64 *pages = dev->cmd.pool;
-	int i, nent=0, cur_order = 18;
-	u64 needed = dev->fw.fw_pages;
-	u64 addr = mem;
-	while (needed>0)
-	{
-// 0: va h
-// 4: va l
-// 8: ha h
-// 12: ha l
-		while (needed<(1<<cur_order))
-			cur_order--;
-		pages[nent * 2] = 0;	// no virtual address
-		pages[nent * 2 + 1] = bs64(addr + cur_order);
-//DRIVER_LOG(DRIVER_PREFIX "%X %d\n", addr, cur_order);
-		needed-= 1 << cur_order;
-		addr+= 1 << (cur_order+MLX4_ICM_PAGE_SHIFT);
-		if (++nent == 128) {
-			if (mlx4_cmd(dev, pages, nent, 0, MLX4_CMD_MAP_FA,
-					MLX4_CMD_TIME_CLASS_B))
-			{
-				DRIVER_LOG(DRIVER_PREFIX "Couldn't map FW area, aborting.\n");
-				return 1;
-			}
-			DRIVER_LOG(DRIVER_PREFIX "mapped %d pages\n", nent);
-			nent = 0;
-		}
-	}
-	if (nent!=0)
-	{
-		if (mlx4_cmd(dev, pages, nent, 0, MLX4_CMD_MAP_FA,
-				MLX4_CMD_TIME_CLASS_B))
-		{
-			DRIVER_LOG(DRIVER_PREFIX "Couldn't map FW area last, aborting.\n");
-			return 1;
-		}
-		DRIVER_LOG(DRIVER_PREFIX "mapped %d pages last\n", nent);
-	}
-	if (mlx4_RUN_FW(dev))
-	{
-		DRIVER_LOG(DRIVER_PREFIX "RUN_FW command failed, aborting.\n");
-		return 1;
-	}
-	return 0;
-*/
 	int err;
 
 	dev->fw.fw_icm = mlx4_alloc_icm(dev, dev->fw.fw_pages,
@@ -729,6 +680,7 @@ err_free_aux:
 static void mlx4_free_icms(struct mlx4_device *dev)
 {
 	mlx4_cleanup_icm_table(dev, &dev->mcg_table.table);
+DRIVER_LOG(DRIVER_PREFIX "mlx4_cleanup_icm_table(mcg_table)\n");
 	mlx4_cleanup_icm_table(dev, &dev->srq_table.table);
 	mlx4_cleanup_icm_table(dev, &dev->cq_table.table);
 	mlx4_cleanup_icm_table(dev, &dev->qp_table.rdmarc_table);
@@ -742,8 +694,10 @@ static void mlx4_free_icms(struct mlx4_device *dev)
 	mlx4_cleanup_icm_table(dev, &dev->cq_table.cmpt_table);
 	mlx4_cleanup_icm_table(dev, &dev->srq_table.cmpt_table);
 	mlx4_cleanup_icm_table(dev, &dev->qp_table.cmpt_table);
+DRIVER_LOG(DRIVER_PREFIX "mlx4_cleanup_icm_table(qp_table)\n");
 
 	mlx4_UNMAP_ICM_AUX(dev);
+DRIVER_LOG(DRIVER_PREFIX "mlx4_UNMAP_ICM_AUX()\n");
 	mlx4_free_icm(dev, dev->fw.aux_icm, 0);
 }
 
@@ -774,8 +728,11 @@ static void mlx4_close_hca(struct mlx4_device *dev)
 	unmap_bf_area(dev);
 	mlx4_CLOSE_HCA(dev, 0);
 	mlx4_free_icms(dev);
+DRIVER_LOG(DRIVER_PREFIX "mlx4_free_icms\n");
 	mlx4_UNMAP_FA(dev);
+DRIVER_LOG(DRIVER_PREFIX "mlx4_UNMAP_FA\n");
 	mlx4_free_icm(dev, dev->fw.fw_icm, 0);
+DRIVER_LOG(DRIVER_PREFIX "mlx4_close_hca() end\n");
 }
 
 static int mlx4_init_hca(struct mlx4_device *dev)
@@ -913,29 +870,37 @@ static int mlx4_setup_hca(struct mlx4_device *dev)
 		goto err_mr_table_free;
 	}
 
-	err = mlx4_cmd_use_events(dev);
+//	err = mlx4_cmd_use_events(dev);
 	if (err) {
 		DRIVER_LOG(DRIVER_PREFIX "Failed to switch to event-driven "
 			 "firmware commands, aborting.\n");
 		goto err_eq_table_free;
 	}
-
+L4_KDB_Enter("before nop");
 	err = mlx4_NOP(dev);
 	if (err) {
 		if (dev->flags & MLX4_FLAG_MSI_X) {
 			DRIVER_LOG(DRIVER_PREFIX "NOP command failed to generate MSI-X "
-				  "interrupt IRQ %d).\n",
+				  "interrupt IRQ %d.\n",
 				  dev->eq_table.eq[dev->caps.num_comp_vectors].irq);
-			DRIVER_LOG(DRIVER_PREFIX "Trying again without MSI-X.\n");
+			//DRIVER_LOG(DRIVER_PREFIX "Trying again without MSI-X.\n");
 		} else {
 			DRIVER_LOG(DRIVER_PREFIX "NOP command failed to generate interrupt "
 				 "(IRQ %d), aborting.\n",
 				 dev->eq_table.eq[dev->caps.num_comp_vectors].irq);
 			DRIVER_LOG(DRIVER_PREFIX "BIOS or ACPI interrupt routing problem?\n");
 		}
+		int i;
+		for (i=0; i<(dev->pcie.msixCount+63)/64; ++i)
+		{
+			DRIVER_LOG(DRIVER_PREFIX "%02d: %p\n", i, dev->pcie.msixPBA[i]);
+			DRIVER_LOG(DRIVER_PREFIX "    %08X %08X\n", i, *(u32*)dev->pcie.msixPBA[i] & 0xFFFFFFFF, *((u32*)(dev->pcie.msixPBA[i])+1) & 0xFFFFFFFF);
+		}
+L4_KDB_Enter("after nop");
 
 		goto err_cmd_poll;
 	}
+L4_KDB_Enter("reboot!");
 
 	DRIVER_LOG(DRIVER_PREFIX "NOP command IRQ test passed\n");
 
@@ -960,7 +925,7 @@ static int mlx4_setup_hca(struct mlx4_device *dev)
 		goto err_srq_table_free;
 	}
 
-	err = 1;//mlx4_init_mcg_table(dev);
+	err = mlx4_init_mcg_table(dev);
 	if (err) {
 		DRIVER_LOG(DRIVER_PREFIX "Failed to initialize "
 			 "multicast group table, aborting.\n");
@@ -969,17 +934,17 @@ static int mlx4_setup_hca(struct mlx4_device *dev)
 
 	for (port = 1; port <= dev->caps.num_ports; port++) {
 		enum mlx4_port_type port_type = 0;
-		//mlx4_SENSE_PORT(dev, port, &port_type);
+		mlx4_SENSE_PORT(dev, port, &port_type);
 		if (port_type)
 			dev->caps.port_type[port] = port_type;
 		ib_port_default_caps = 0;
-		err = 1;//mlx4_get_port_ib_caps(dev, port, &ib_port_default_caps);
+		err = mlx4_get_port_ib_caps(dev, port, &ib_port_default_caps);
 		if (err)
 			DRIVER_LOG(DRIVER_PREFIX "failed to get port %d default "
 				  "ib capabilities (%d). Continuing with "
 				  "caps = 0\n", port, err);
 		dev->caps.ib_port_def_cap[port] = ib_port_default_caps;
-		err = 1;//mlx4_SET_PORT(dev, port);
+		err = mlx4_SET_PORT(dev, port);
 		if (err) {
 			DRIVER_LOG(DRIVER_PREFIX "Failed to set port %d, aborting\n",
 				port);
@@ -991,13 +956,13 @@ static int mlx4_setup_hca(struct mlx4_device *dev)
 	return 0;
 
 err_mcg_table_free:
-//	mlx4_cleanup_mcg_table(dev);
+	mlx4_cleanup_mcg_table(dev);
 
 err_qp_table_free:
 	mlx4_cleanup_qp_table(dev);
 
 err_srq_table_free:
-//	mlx4_cleanup_srq_table(dev);
+	mlx4_cleanup_srq_table(dev);
 
 err_cq_table_free:
 	mlx4_cleanup_cq_table(dev);
@@ -1006,10 +971,10 @@ err_cmd_poll:
 	mlx4_cmd_use_polling(dev);
 
 err_eq_table_free:
-//	mlx4_cleanup_eq_table(dev);
+	mlx4_cleanup_eq_table(dev);
 
 err_mr_table_free:
-//	mlx4_cleanup_mr_table(dev);
+	mlx4_cleanup_mr_table(dev);
 
 err_pd_table_free:
 	mlx4_cleanup_pd_table(dev);
@@ -1025,32 +990,22 @@ err_uar_table_free:
 	return err;
 }
 
-#define min_t(type, x, y) ({			\
-	type __min1 = (x);			\
-	type __min2 = (y);			\
-	__min1 < __min2 ? __min1: __min2; })
-struct msix_entry
-{
-	u32	vector;	/* kernel uses to write allocated vector */
-	u16	entry;	/* driver uses to specify entry, OS writes */
-};
 static void mlx4_enable_msi_x(struct mlx4_device *dev)
 {
-	int num_online_cpus = 1;// TODO
+	int num_online_cpus = L4_NumProcessors(L4_GetKernelInterface());
 	struct msix_entry *entries;
 	int nreq = min_t(int, dev->caps.num_ports *
 			 min_t(int, num_online_cpus + 1, MAX_MSIX_P_PORT)
 				+ MSIX_LEGACY_SZ, MAX_MSIX);
 	int err;
 	int i;
-
 	if (msi_x) {
 		nreq = min_t(int, dev->caps.num_eqs - dev->caps.reserved_eqs,
 			     nreq);
-		entries = 0;//kcalloc(nreq, sizeof *entries, GFP_KERNEL);
+		entries = platform_mapAny(nreq * sizeof *entries);//kcalloc(nreq, sizeof *entries, GFP_KERNEL);
 		if (!entries)
 		{
-			DRIVER_LOG(DRIVER_PREFIX "TODO enable msix\n");
+			DRIVER_LOG(DRIVER_PREFIX "couldn't allocate msi-x entries\n");
 			goto no_msi;
 		}
 
@@ -1058,7 +1013,7 @@ static void mlx4_enable_msi_x(struct mlx4_device *dev)
 			entries[i].entry = i;
 
 	retry:
-		err = 1;//pci_enable_msix(dev->pdev, entries, nreq);
+		err = enable_msix(&dev->pcie, entries, nreq);
 		if (err) {
 			/* Try again if at least 2 vectors are available */
 			if (err > 1) {
@@ -1072,12 +1027,14 @@ static void mlx4_enable_msi_x(struct mlx4_device *dev)
 			goto no_msi;
 		}
 
-		if (nreq <
-		    MSIX_LEGACY_SZ + dev->caps.num_ports * MIN_MSIX_P_PORT) {
+		if (nreq < MSIX_LEGACY_SZ + dev->caps.num_ports * MIN_MSIX_P_PORT)
+		{
+			DRIVER_LOG(DRIVER_PREFIX "MSI-X %d vectors (legacy mode)\n", nreq);
 			/*Working in legacy mode , all EQ's shared*/
 			dev->caps.comp_pool           = 0;
 			dev->caps.num_comp_vectors = nreq - 1;
 		} else {
+			DRIVER_LOG(DRIVER_PREFIX "MSI-X %d vectors\n", nreq);
 			dev->caps.comp_pool           = nreq - MSIX_LEGACY_SZ;
 			dev->caps.num_comp_vectors = MSIX_LEGACY_SZ - 1;
 		}
@@ -1091,11 +1048,19 @@ static void mlx4_enable_msi_x(struct mlx4_device *dev)
 	}
 
 no_msi:
+	DRIVER_LOG(DRIVER_PREFIX "Disabling MSI-X\n");
+	{
+		unsigned short cmd = dev->pcie.read_config_word(&dev->pcie, 4);
+		mb();
+		unsigned short newcmd = cmd & (~0x400);
+		dev->pcie.write_config_word(&dev->pcie, 4, newcmd);
+		DRIVER_LOG(DRIVER_PREFIX "old: %04X, new: %04X\n", cmd, newcmd);
+	}
 	dev->caps.num_comp_vectors = 1;
 	dev->caps.comp_pool	   = 0;
 
-//	for (i = 0; i < 2; ++i)
-//		dev->eq_table.eq[i].irq = dev->pdev->irq;
+	for (i = 0; i < 2; ++i)
+		dev->eq_table.eq[i].irq = dev->pcie.defaultIrq;
 }
 
 static int mlx4_init_port_info(struct mlx4_device *dev, int port)
@@ -1105,8 +1070,8 @@ static int mlx4_init_port_info(struct mlx4_device *dev, int port)
 
 	info->dev = dev;
 	info->port = port;
-//	mlx4_init_mac_table(dev, &info->mac_table);
-//	mlx4_init_vlan_table(dev, &info->vlan_table);
+	mlx4_init_mac_table(dev, &info->mac_table);
+	mlx4_init_vlan_table(dev, &info->vlan_table);
 
 //	sprintf(info->dev_name, "mlx4_port%d", port);
 //	info->port_attr.attr.name = info->dev_name;
@@ -1115,11 +1080,11 @@ static int mlx4_init_port_info(struct mlx4_device *dev, int port)
 //	info->port_attr.store     = set_port_type;
 //	sysfs_attr_init(&info->port_attr.attr);
 
-	err = 1;//device_create_file(&dev->pdev->dev, &info->port_attr);
-	if (err) {
-		DRIVER_LOG(DRIVER_PREFIX "Failed to create file for port %d\n", port);
-		info->port = -1;
-	}
+//	err = 1;//device_create_file(&dev->pdev->dev, &info->port_attr);
+//	if (err) {
+//		DRIVER_LOG(DRIVER_PREFIX "Failed to create file for port %d\n", port);
+//		info->port = -1;
+//	}
 
 	return err;
 }
@@ -1136,7 +1101,6 @@ static int mlx4_init_steering(struct mlx4_device *dev)
 {
 	int num_entries = dev->caps.num_ports;
 	int i, j;
-DRIVER_LOG(DRIVER_PREFIX "init steering\n");
 	dev->steer = platform_mapAny(sizeof(struct mlx4_steer) * num_entries);//kzalloc(sizeof(struct mlx4_steer) * num_entries, GFP_KERNEL);
 	if (!dev->steer)
 		return -1;
@@ -1252,20 +1216,20 @@ int mlx4_init(struct mlx4_device* dev)
 	}
 
 	dev       = &priv->dev;
-	dev->pdev = pdev;
-	INIT_LIST_HEAD(&priv->ctx_list);
+	dev->pdev = pdev;*/
+	INIT_LIST_HEAD(&dev->ctx_list);
 	//spin_lock_init(&priv->ctx_lock);
 
-	mutex_init(&priv->port_mutex);
+//	mutex_init(&priv->port_mutex);
 
-	INIT_LIST_HEAD(&priv->pgdir_list);
-	mutex_init(&priv->pgdir_mutex);
+	INIT_LIST_HEAD(&dev->pgdir_list);
+/*	mutex_init(&priv->pgdir_mutex);
 
 	pci_read_config_byte(pdev, PCI_REVISION_ID, &dev->rev_id);
-
-	INIT_LIST_HEAD(&priv->bf_list);
-	mutex_init(&priv->bf_mutex);
 */
+	INIT_LIST_HEAD(&dev->bf_list);
+//	mutex_init(&priv->bf_mutex);
+
 //	dev->rev_id = dev->pcie.read_config_word(&dev->pcie, 8) && 0xFF;
 	/*
 	 * Now reset the HCA before we touch the PCI capabilities or
@@ -1299,8 +1263,9 @@ int mlx4_init(struct mlx4_device* dev)
 		goto err_close;
 	}
 
-	//priv->msix_ctl.pool_bm = 0;
+	dev->msix_ctl.pool_bm = 0;
 	//spin_lock_init(&priv->msix_ctl.pool_lock);
+//L4_KDB_Enter("mlx4_enable_msi_x");
 
 	mlx4_enable_msi_x(dev);
 
@@ -1314,7 +1279,7 @@ int mlx4_init(struct mlx4_device* dev)
 	err = mlx4_setup_hca(dev);
 /*	if (err == -1 && (dev->flags & MLX4_FLAG_MSI_X)) {
 		dev->flags &= ~MLX4_FLAG_MSI_X;
-//		pci_disable_msix(pdev);
+		disable_msix(pdev);
 		err = mlx4_setup_hca(dev);
 	}*/
 
@@ -1330,10 +1295,11 @@ int mlx4_init(struct mlx4_device* dev)
 			goto err_port;
 	}
 
-	err = 1;//mlx4_register_device(dev);
-	if (err)
-		goto err_port;
+//	err = 1;//mlx4_register_device(dev);
+//	if (err)
+//		goto err_port;
 
+	DRIVER_LOG(DRIVER_PREFIX "no sensing in setup_hca.\n");
 //	mlx4_sense_init(dev);
 //	mlx4_start_sense(dev);
 
@@ -1345,13 +1311,13 @@ err_port:
 	for (--port; port >= 1; --port)
 		mlx4_cleanup_port_info(&dev->port[port]);
 
-//	mlx4_cleanup_mcg_table(dev);
+	mlx4_cleanup_mcg_table(dev);
 	mlx4_cleanup_qp_table(dev);
-//	mlx4_cleanup_srq_table(dev);
+	mlx4_cleanup_srq_table(dev);
 	mlx4_cleanup_cq_table(dev);
 	mlx4_cmd_use_polling(dev);
-//	mlx4_cleanup_eq_table(dev);
-//	mlx4_cleanup_mr_table(dev);
+	mlx4_cleanup_eq_table(dev);
+	mlx4_cleanup_mr_table(dev);
 	mlx4_cleanup_pd_table(dev);
 	mlx4_cleanup_uar_table(dev);
 
@@ -1359,16 +1325,15 @@ err_steer:
 	mlx4_clear_steering(dev);
 
 err_free_eq:
-//	mlx4_free_eq_table(dev);
-
+	mlx4_free_eq_table(dev);
 err_close:
-//	if (dev->flags & MLX4_FLAG_MSI_X)
-//		pci_disable_msix(pdev);
-
+	if (dev->flags & MLX4_FLAG_MSI_X)
+		disable_msix(&dev->pcie);
 	mlx4_close_hca(dev);
-
+DRIVER_LOG(DRIVER_PREFIX "close_hca\n");
 err_cmd:
 	mlx4_cmd_cleanup(dev);
+DRIVER_LOG(DRIVER_PREFIX "cmd_cleanup\n");
 
 err_free_dev:
 //	kfree(priv);
@@ -1379,6 +1344,7 @@ err_release_regions:
 err_disable_pdev:
 //	pci_disable_device(pdev);
 //	pci_set_drvdata(pdev, NULL);
+DRIVER_LOG(DRIVER_PREFIX "mlx4_init ends with error %d\n", err);
 	return err;
 }
 /*
@@ -1416,7 +1382,7 @@ static void mlx4_remove_one(struct pci_dev *pdev)
 		mlx4_cmd_cleanup(dev);
 
 		if (dev->flags & MLX4_FLAG_MSI_X)
-			pci_disable_msix(pdev);
+			disable_msix(pdev);
 
 		kfree(priv);
 		pci_release_regions(pdev);

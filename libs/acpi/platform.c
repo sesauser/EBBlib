@@ -16,7 +16,33 @@ void* platform_map(void* address, L4_Word_t size)
 		size = PAGE_SIZE;
 	}
 	L4_Word_t offset = ((L4_Word_t)address) & ((PAGE_SIZE)-1);
-	address = ((unsigned char*)address)-offset;
+	void* curaddress = ((unsigned char*)address)-offset;
+	int lg = 63;
+	L4_Word_t left = size;
+	while (left>0 && lg>12)
+	{
+		L4_Word_t next = 1<<lg;
+		if (size>=next)
+		{
+			L4_Fpage_t fp = L4_Fpage(curaddress, next), rcv = fp;
+			L4_Set_Rights(&fp, L4_ReadWriteOnly);
+			L4_Fpage_t res = L4_Sigma0_GetPage_RcvWindow(L4_nilthread, fp, rcv);
+			if (L4_IsNilFpage(res))
+			{
+				LOG(PREFIX "mapping failed %X (size %d)\n", curaddress, next);
+				break;
+			}
+			curaddress+= next;
+			left-= next;
+		}
+		lg--;
+	}
+	if (left>0)
+	{	// TODO should undo successful mappings
+		LOG(PREFIX "mapping failed %X (size %d)\n", address, size);
+		return 0;
+	}
+	return address;
 	L4_Fpage_t fp = L4_Fpage(address, size), rcv = fp;
 	L4_Set_Rights(&fp, L4_ReadWriteOnly);
 	L4_Fpage_t res = L4_Sigma0_GetPage_RcvWindow(L4_nilthread, fp, rcv);

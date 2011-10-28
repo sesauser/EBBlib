@@ -71,6 +71,7 @@ struct pcie_device
 	unsigned char pcieCap;
 	unsigned char msixCap;
 	unsigned char type;
+	unsigned char defaultIrq;
 	unsigned int bar[6];
 	unsigned int barSize[6];
 	unsigned char barType[6];

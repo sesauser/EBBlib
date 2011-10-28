@@ -2,7 +2,6 @@
 #include "../acpi/acpi.h"
 #include "../acpi/platform.h"
 #include <l4io.h>
-#include <l4hal/types.h>
 
 #define bool int
 #define false 0
@@ -184,6 +183,7 @@ static int enumerateDevices(int bus, pcie_device_callback callback, void* callba
 	dev._internal = &internal;
 	dev.vendorId = vendor;
 	dev.deviceId = deviceId;
+	dev.defaultIrq = pciConfigRead8(bus,i,0,0x3C);
 	dev.read_config = &pci_read_config;
 	dev.write_config = &pci_write_config;
 	dev.read_config_word = &pci_read_config_word;
@@ -359,6 +359,8 @@ static void write_config_word(struct pcie_device_internal* device, UINT16 reg, U
 
 static int find_anything(struct pcie_device* dev, void* data)
 {
+	if (dev->msixTable)
+		PCIE_LOG("MSI-X ");
 	switch (dev->vendorId)
 	{
 	case 0x1000:
@@ -555,6 +557,7 @@ unsigned int pcie_find_device(pcie_device_callback callback, void* callbackData)
 				dev.deviceId = (id>> 16) & 0xFFFF;
 				dev.pcieCap = pcieCap;
 				dev.msixCap = msixCap;
+				dev.defaultIrq = pcie_config_read_byte(hc, bus, device, 0, 0x3C);
 				dev.read_config = &read_config;
 				dev.write_config = &write_config;
 				dev.read_config_word = &read_config_word;
@@ -602,6 +605,7 @@ unsigned int pcie_find_device(pcie_device_callback callback, void* callbackData)
 				if (msixCap)
 				{	// msix
 					unsigned short control = pcie_config_read_word(hc, bus, device, 0, msixCap+2);
+					pcie_config_write_word(hc, bus, device, 0, msixCap+2, control & (~ (1 << 15)));
 					dev.msixCount = ((control & 0x7FF)+1);
 					unsigned int table_offset = pcie_config_read_dword(hc, bus, device, 0, msixCap+4);
 					unsigned char bir = (unsigned char)(table_offset & (7));
@@ -630,6 +634,7 @@ unsigned int pcie_find_device(pcie_device_callback callback, void* callbackData)
 				internal.function = 0;
 				if ((*callback)(&dev, callbackData))
 				{
+					PCIE_LOG(PCIE_PREFIX "%p bar: %p %p %p %p %p %p\n%p\n", pcie_config_address(hc, bus, device, 0), dev.bar[0], dev.bar[1], dev.bar[2], dev.bar[3], dev.bar[4], dev.bar[5], dev.msixTable);
 					result++;
 				}
 //				UINT8 function;

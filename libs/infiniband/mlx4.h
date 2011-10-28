@@ -34,7 +34,7 @@
 extern "C" {
 #endif
 
-extern int infiniband_mlx4_init(struct Device* device, struct ibv_device* ibv_dev);
+extern struct ibv_device* infiniband_mlx4_init(struct Device* device);
 
 #ifdef __cplusplus
 }

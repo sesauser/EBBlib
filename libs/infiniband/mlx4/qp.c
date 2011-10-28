@@ -198,7 +198,7 @@ int mlx4_qp_alloc(struct mlx4_device *dev, int qpn, struct mlx4_qp *qp)
 		goto err_put_rdmarc;
 
 	//spin_lock_irq(&qp_table->lock);
-	err = 1;//radix_tree_insert(&dev->qp_table_tree, qp->qpn & (dev->caps.num_qps - 1), qp);
+//	err = 1;//radix_tree_insert(&dev->qp_table_tree, qp->qpn & (dev->caps.num_qps - 1), qp);
 	//spin_unlock_irq(&qp_table->lock);
 	if (err)
 		goto err_put_cmpt;

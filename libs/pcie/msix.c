@@ -1,4 +1,6 @@
 #include "msix.h"
+#include "../acpi/platform.h"
+#include <l4/kip.h>
 
 #define msi_control_reg(base)		(base + PCI_MSI_FLAGS)
 #define msi_lower_address_reg(base)	(base + PCI_MSI_ADDRESS_LO)
@@ -15,17 +17,94 @@
 #define msix_table_size(control) 	((control & PCI_MSIX_FLAGS_QSIZE)+1)
 #define multi_msix_capable(control)	msix_table_size((control))
 
-int enable_msix(struct pcie_device* self, struct msix_entry* entries, int entryCount)
+int enable_msix(struct pcie_device* self, struct msix_entry *entries, int nr)
 {
-	if (!self->msixCap)
-		return -1;
-	if (self->msixCount<entryCount)
+	static int initialized = 0;
+	static int available = 0;
+	if (!initialized)
+	{
+		initialized = 1;
+		L4_KernelInterfacePage_t* kip = (L4_KernelInterfacePage_t *)L4_KernelInterface(0,0,0);
+		available = L4_ThreadIdSystemBase(kip);
+	}
+	if (available<16)	// don't use the first 16 interrupts..?..
+		return -1;	// no more free interrupts available
+	if (available-16<nr)
+		return available-16;
+	if (nr>self->msixCount)
 		return self->msixCount;
-	// enable msix but mask all
+	int i,j;
+	for (i = 0; i < nr; i++)
+	{
+		if (entries[i].entry >= self->msixCount)
+			return -1;		/* invalid entry */
+		for (j = i + 1; j < nr; j++) {
+			if (entries[i].entry == entries[j].entry)
+				return -1;	/* duplicate entry */
+		}
+	}
+	// disable (normal) interrupts
+	unsigned short cmd = self->read_config_word(self, 4);
+	mb();
+	unsigned short newcmd = cmd | 0x400;
+	if (cmd!=newcmd)
+	{
+		self->write_config_word(self, 4, newcmd);
+		mb();
+	}
+	// get cpu id
+	int cpu_id;
+	int b = 1;
+	asm volatile ("cpuid; mov %%ebx, %0;" : "=r"(cpu_id) : "a"(b) : "%ebx","%ecx","%edx");
+	cpu_id = (cpu_id >> 24) & 0xFF;
 	unsigned short control = self->read_config_word(self, self->msixCap+2);
-	control|= (1 << 15) | (1 << 14);
-	self->write_config_word(self, self->msixCap+2, control);
-	return -1;
+	mb();
+	unsigned short newcontrol = control | (3 << 14);
+	if (control!=newcontrol)
+	{
+		self->write_config_word(self, self->msixCap+2, newcontrol);
+		control = newcontrol;
+		mb();
+	}
+	// enable and mask msix
+	for (i = 0; i < nr; i++)
+	{
+		--available;
+		entries[i].vector = available;
+		// set irq to device
+		self->msixTable[entries[i].entry*4+0] = 0xFEE00000 | (cpu_id << 12);
+		self->msixTable[entries[i].entry*4+1] = 0;
+		self->msixTable[entries[i].entry*4+2] = ((0x44+available) & 0xFF);	// irq vector, HACK for L4 IO-APIC
+		// defaults to masked..
+		int control = self->msixTable[entries[i].entry*4+3];
+		mb();
+		self->msixTable[entries[i].entry*4+3] = control & (~1);	// unmask
+		mb();
+		//printf("%d(%d): %p %p %p %p\n", i, entries[i].entry, self->msixTable[entries[i].entry*4+3],self->msixTable[entries[i].entry*4+2], self->msixTable[entries[i].entry*4+1], self->msixTable[entries[i].entry*4+0]);
+	}
+	mb();
+	// unmask msix?
+	newcontrol = control & (~(1<<14));
+	self->write_config_word(self, self->msixCap+2, newcontrol);
+	//printf("cfg: %X -> %X\n", control, self->read_config_word(self, self->msixCap+2));
+	return 0;
+}
+
+void disable_msix(struct pcie_device* dev)
+{
+	unsigned short control = dev->read_config_word(dev, dev->msixCap+2);
+	unsigned short newcontrol = control & (~(3 << 14));
+	if (control!=newcontrol)
+	{
+		dev->write_config_word(dev, dev->msixCap+2, newcontrol);
+	}
+	// enable (normal) interrupts
+	unsigned short cmd = dev->read_config_word(dev, 4);
+	unsigned short newcmd = cmd & (~0x400);
+	if (cmd!=newcmd)
+	{
+		dev->write_config_word(dev, 4, newcmd);
+	}
 }
 
 /*static u32 __msix_mask_irq(struct msi_desc *desc, u32 flag)

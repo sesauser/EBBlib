@@ -136,14 +136,14 @@ int ibv_dealloc_pd(struct ibv_pd *pd)
 {
 	return pd->context->ops.dealloc_pd(pd);
 }
-/*
-struct ibv_mr *__ibv_reg_mr(struct ibv_pd *pd, void *addr,
+
+struct ibv_mr *ibv_reg_mr(struct ibv_pd *pd, void *addr,
 			    size_t length, int access)
 {
 	struct ibv_mr *mr;
 
-	if (ibv_dontfork_range(addr, length))
-		return 0;
+//	if (ibv_dontfork_range(addr, length))
+//		return 0;
 
 	mr = pd->context->ops.reg_mr(pd, addr, length, access);
 	if (mr) {
@@ -151,27 +151,26 @@ struct ibv_mr *__ibv_reg_mr(struct ibv_pd *pd, void *addr,
 		mr->pd      = pd;
 		mr->addr    = addr;
 		mr->length  = length;
-	} else
-		ibv_dofork_range(addr, length);
+	}
+//	} else
+//		ibv_dofork_range(addr, length);
 
 	return mr;
 }
-default_symver(__ibv_reg_mr, ibv_reg_mr);
 
-int __ibv_dereg_mr(struct ibv_mr *mr)
+int ibv_dereg_mr(struct ibv_mr *mr)
 {
 	int ret;
 	void *addr	= mr->addr;
 	size_t length	= mr->length;
 
 	ret = mr->context->ops.dereg_mr(mr);
-	if (!ret)
-		ibv_dofork_range(addr, length);
+//	if (!ret)
+//		ibv_dofork_range(addr, length);
 
 	return ret;
 }
-default_symver(__ibv_dereg_mr, ibv_dereg_mr);
-
+/*
 static struct ibv_comp_channel *ibv_create_comp_channel_v2(struct ibv_context *context)
 {
 	struct ibv_abi_compat_v2 *t = context->abi_compat;
@@ -252,13 +251,13 @@ out:
 
 	return ret;
 }
-
-struct ibv_cq *__ibv_create_cq(struct ibv_context *context, int cqe, void *cq_context,
+*/
+struct ibv_cq *ibv_create_cq(struct ibv_context *context, int cqe, void *cq_context,
 			       struct ibv_comp_channel *channel, int comp_vector)
 {
 	struct ibv_cq *cq;
 
-	pthread_mutex_lock(&context->mutex);
+	//pthread_mutex_lock(&context->mutex);
 
 	cq = context->ops.create_cq(context, cqe, channel, comp_vector);
 
@@ -270,16 +269,15 @@ struct ibv_cq *__ibv_create_cq(struct ibv_context *context, int cqe, void *cq_co
 		cq->cq_context 	     	   = cq_context;
 		cq->comp_events_completed  = 0;
 		cq->async_events_completed = 0;
-		pthread_mutex_init(&cq->mutex, 0);
-		pthread_cond_init(&cq->cond, 0);
+		//pthread_mutex_init(&cq->mutex, 0);
+		//pthread_cond_init(&cq->cond, 0);
 	}
 
-	pthread_mutex_unlock(&context->mutex);
+	//pthread_mutex_unlock(&context->mutex);
 
 	return cq;
 }
-default_symver(__ibv_create_cq, ibv_create_cq);
-
+/*
 int __ibv_resize_cq(struct ibv_cq *cq, int cqe)
 {
 	if (!cq->context->ops.resize_cq)
@@ -377,8 +375,8 @@ int __ibv_destroy_srq(struct ibv_srq *srq)
 	return srq->context->ops.destroy_srq(srq);
 }
 default_symver(__ibv_destroy_srq, ibv_destroy_srq);
-
-struct ibv_qp *__ibv_create_qp(struct ibv_pd *pd,
+*/
+struct ibv_qp* ibv_create_qp(struct ibv_pd *pd,
 			       struct ibv_qp_init_attr *qp_init_attr)
 {
 	struct ibv_qp *qp = pd->context->ops.create_qp(pd, qp_init_attr);
@@ -393,15 +391,14 @@ struct ibv_qp *__ibv_create_qp(struct ibv_pd *pd,
 		qp->qp_type          = qp_init_attr->qp_type;
 		qp->state	     = IBV_QPS_RESET;
 		qp->events_completed = 0;
-		pthread_mutex_init(&qp->mutex, 0);
-		pthread_cond_init(&qp->cond, 0);
+		//pthread_mutex_init(&qp->mutex, 0);
+		//pthread_cond_init(&qp->cond, 0);
 	}
 
 	return qp;
 }
-default_symver(__ibv_create_qp, ibv_create_qp);
 
-int __ibv_query_qp(struct ibv_qp *qp, struct ibv_qp_attr *attr,
+int ibv_query_qp(struct ibv_qp *qp, struct ibv_qp_attr *attr,
 		   int attr_mask,
 		   struct ibv_qp_init_attr *init_attr)
 {
@@ -416,10 +413,8 @@ int __ibv_query_qp(struct ibv_qp *qp, struct ibv_qp_attr *attr,
 
 	return 0;
 }
-default_symver(__ibv_query_qp, ibv_query_qp);
 
-int __ibv_modify_qp(struct ibv_qp *qp, struct ibv_qp_attr *attr,
-		    int attr_mask)
+int ibv_modify_qp(struct ibv_qp *qp, struct ibv_qp_attr *attr, int attr_mask)
 {
 	int ret;
 
@@ -432,14 +427,12 @@ int __ibv_modify_qp(struct ibv_qp *qp, struct ibv_qp_attr *attr,
 
 	return 0;
 }
-default_symver(__ibv_modify_qp, ibv_modify_qp);
 
-int __ibv_destroy_qp(struct ibv_qp *qp)
+int ibv_destroy_qp(struct ibv_qp *qp)
 {
 	return qp->context->ops.destroy_qp(qp);
 }
-default_symver(__ibv_destroy_qp, ibv_destroy_qp);
-
+/*
 struct ibv_ah *__ibv_create_ah(struct ibv_pd *pd, struct ibv_ah_attr *attr)
 {
 	struct ibv_ah *ah = pd->context->ops.create_ah(pd, attr);

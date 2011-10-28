@@ -17,7 +17,6 @@
 static struct Device g_Device[INFI_MAX_DEVICES];
 static unsigned int g_DeviceCount = 0;
 
-static struct ibv_device ibv_devices[INFI_MAX_DEVICES];
 static struct ibv_device* ibv_devicesPtr[INFI_MAX_DEVICES];
 
 static int infiniband_pcie_device_callback(struct pcie_device* device, void* data)
@@ -58,8 +57,10 @@ static int infiniband_pcie_device_callback(struct pcie_device* device, void* dat
 			{
 				struct Device* dev = (struct Device*)(&g_Device[g_DeviceCount]);
 				memcpy(&(dev->pcie), device, sizeof(struct pcie_device));
-				if (infiniband_mlx4_init(dev, &ibv_devices[g_DeviceCount])==0)
+				struct ibv_device* idev = infiniband_mlx4_init(dev);
+				if (idev!=0)
 				{
+					ibv_devicesPtr[g_DeviceCount] = idev;
 					g_DeviceCount++;
 					return 1;
 				}
@@ -79,152 +80,101 @@ static void free_context(struct ibv_context *context)
 {
 }
 
-static L4_ThreadId_t ib_threadId;
-static char ib_stack[8*1024] __attribute__((aligned(64)));
-static int ib_ready = 0;
+L4_ThreadId_t ib_threadId = { .raw = 0 };
 
-static void ib_thread()
+void ib_thread()
 {
 	INFI_LOG(INFI_PREFIX "Thread started\n");
 	pcie_init();
-	int i;
-	for (i=0; i<INFI_MAX_DEVICES; ++i)
-	{
-		ibv_devices[i].ops.alloc_context = alloc_context;
-		ibv_devices[i].ops.free_context = free_context;
-		ibv_devices[i].transport_type = IBV_TRANSPORT_IB;
-		ibv_devices[i].node_type = IBV_NODE_UNKNOWN;
-		ibv_devicesPtr[i] = &ibv_devices[i];
-	}
 	int num = pcie_find_device(&infiniband_pcie_device_callback, 0);
 	if (num>0)
 	{
 		INFI_LOG(INFI_PREFIX "found %u devices\n", num);
-		for (i=0; i<num; ++i)
-		{
-			ibv_devices[i].node_type = IBV_NODE_CA;
-		}
 	}  else
 	{
 		INFI_LOG(INFI_PREFIX "no devices found\n");
 	}
 	INFI_LOG(INFI_PREFIX "IB: waiting for events\n");
-	ib_ready = 1;
 	// should start to wait for msix events
-//	L4_Sleep(L4_Never);
-}
-
-static void infiniband_init(void)
-{
-	static int __initialized = 0;
-	if (__initialized>0)
-		return;
-	__initialized = 1;
-ib_thread();
-return;
-	// setup thread
-	// Get kernel interface page.
-	L4_KernelInterfacePage_t* kip = (L4_KernelInterfacePage_t *)L4_KernelInterface(0,0,0);
-
-	//L4_ThreadId sigma0Id = L4_GlobalId(L4_ThreadIdUserBase(kip), 1);
-	// Calculate API defined thread IDs.
-	ib_threadId = L4_GlobalId(L4_ThreadIdUserBase(kip) + 8, 1);
-	L4_Word_t ip = (L4_Word_t)&ib_thread;
-	L4_Word_t sp = (L4_Word_t)(&ib_stack[sizeof(ib_stack) - 1]);
-	L4_Word_t utcbsize = L4_UtcbSize(kip);
-	/* do the ThreadControl call */
-	if (!L4_ThreadControl(ib_threadId,	// new thread id
-	                      L4_Myself(),	// address space
-	                      L4_Myself(),	// scheduler
-	                      L4_Myself(),	// pager
-	                      ((void*)(((L4_Word_t)L4_MyLocalId().raw + utcbsize * (8)) & ~(utcbsize - 1)))))
-	{
-		INFI_LOG(INFI_PREFIX "couldn't start IB thread\n");
-		return;
-	}
-
-	/* set thread on our code */
-	L4_Start_SpIp(ib_threadId, sp, ip);
-	INFI_LOG(INFI_PREFIX "waiting for IB thread\n");
-{	// pager loop
 	L4_ThreadId_t tid;
 	L4_MsgTag_t tag;
 	L4_Msg_t msg;
- 
-	while(ib_ready==0)
+	while (1)
 	{
 		tag = L4_Wait_Timeout(L4_TimePeriod(100*1000), &tid);
-		
-		while(ib_ready==0)
+		while (L4_IpcSucceeded(tag))
 		{
 			L4_MsgStore(tag, &msg);
-		
-#if 0
+			switch (L4_Label(tag))
 			{
-			printf ("Root-Pager got msg from %p (%p, %p, %p)\n",
-				(void *) tid.raw, (void *) tag.raw,
-				(void *) L4_MsgWord (&msg, 0), (void *) L4_MsgWord (&msg, 1));
-			}
-#endif
-
-			if (L4_UntypedWords (tag) != 2 || L4_TypedWords (tag) != 0 ||
-				!L4_IpcSucceeded (tag))
-			{
-				printf("malformed pagefault IPC from %p (tag=%p)\n",
-					   (void *) tid.raw, (void *) tag.raw);
-				printf("malformed pagefault in root\n");
+			case 1:
+				{
+					L4_MsgClear(&msg);
+					L4_MsgAppendWord(&msg, g_DeviceCount);
+					break;
+				}
+			default:
+				INFI_LOG(INFI_PREFIX "unkown msg (%d)\n", L4_Label(tag));
 				break;
-			}
-	
-			L4_Word_t faddr = L4_MsgWord (&msg, 0);
-			/* L4_Word_t fip   = L4_Get (&msg, 1); */
-		
-			/* This is really ugly, we just touch this address to bring 
-			   the page into our address space */
-			volatile char* dummy = (char*)faddr;
-			*dummy;
-		
-			/* Send mapitem, note that this is a nop between threads in the 
-			   the same address space */
-			L4_MsgClear(&msg);
-			L4_Fpage_t p = L4_FpageLog2(faddr & ~0xFFF, 12);
-			L4_Set_Rights(&p, L4_FullyAccessible);
-			L4_MsgAppendMapItem(&msg, L4_MapItem(p, faddr));
+			};
 			L4_MsgLoad(&msg);
-		
 			L4_ThreadId_t nextid = L4_nilthread;
 			tag = L4_ReplyWait_Timeout(tid, L4_TimePeriod(100*1000), &nextid);
 			tid = nextid;
 		}
 	}
+	L4_Sleep(L4_Never);
 }
-printf ("main pager loop ended\n");
-	// sleep at least 10sec because the driver initialization would need that time
-//	L4_Sleep(L4_TimePeriod(10000*1000));
-//	while (ib_ready==0)
-//		L4_ThreadSwitch(ib_threadId);
-}
-
-
 
 struct ibv_device **ibv_get_device_list(int *num_devices)
 {
-	infiniband_init();
+	L4_Msg_t msg;
+	L4_MsgClear(&msg);
+	L4_Set_MsgLabel(&msg, 1);
+	L4_MsgLoad(&msg);
+	L4_MsgTag_t tag = L4_Call(ib_threadId);
+	if ((!L4_IpcSucceeded(tag)) || (L4_UntypedWords(tag) < 1))
+	{
+		if (!L4_IpcSucceeded(tag))
+			INFI_LOG(INFI_PREFIX "ibv_get_device_list: IPC failed\n");
+		else
+			INFI_LOG(INFI_PREFIX "ibv_get_device_list: invalid answer\n");
+		if (num_devices!=0)
+			num_devices = 0;
+		return 0;
+	}
+	int count = L4_MsgWord(&msg, 0);
 	if (num_devices!=0)
-		*num_devices = g_DeviceCount;
-	return ibv_devicesPtr;
+		*num_devices = count;
+	return ibv_devicesPtr;	// alloc pointer
 }
 
 void ibv_free_device_list(struct ibv_device **list)
 {
+	// dealloc pointer
 }
+
+#define MAX_CONTEXT 1
+static struct ibv_context g_Context[MAX_CONTEXT];
+static int g_ContextUsed[MAX_CONTEXT] = { 0 };
 
 struct ibv_context *ibv_open_device(struct ibv_device *device)
 {
-	return 0;
+	if (device==0 || device->ops.alloc_context==0)
+	{
+		INFI_LOG(INFI_PREFIX "ibv_open_device: invalid device\n");
+		return 0;
+	}
+	return device->ops.alloc_context(device, 0);
 }
 
 int ibv_close_device(struct ibv_context* context)
 {
-	return 0;
+	if (context==0 || context->device->ops.free_context==0)
+	{
+		INFI_LOG(INFI_PREFIX "ibv_close_device: invalid context\n");
+		return 0;
+	}
+	context->device->ops.free_context(context);
+	return 1;
 }

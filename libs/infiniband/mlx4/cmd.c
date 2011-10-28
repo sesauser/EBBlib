@@ -196,6 +196,22 @@ out:
 	return ret;
 }
 
+void check_error(struct mlx4_device *dev)
+{
+	u32* errorbuffer = (u32*)((((L4_Word_t)dev->pcie.bar[dev->fw.catas_bar]) & 0xFFFFFFFF) + ((L4_Word_t)dev->pcie.bar[dev->fw.catas_bar+1] << 32) + dev->fw.catas_offset);
+	if (*(errorbuffer)==0)
+		return;
+	DRIVER_LOG(DRIVER_PREFIX "log error (%d)", dev->fw.catas_size);
+	int i;
+	for (i = 0; i<dev->fw.catas_size/4; ++i)
+	{
+		if ((i % 4)==0)
+			DRIVER_LOG("\n");
+		DRIVER_LOG("%08X \n", errorbuffer[i]);
+	}
+	DRIVER_LOG(DRIVER_PREFIX "\nlog error end\n");
+}
+
 static int mlx4_cmd_poll(struct mlx4_device *dev, u64 in_param, u64 *out_param,
 			 int out_is_imm, u32 in_modifier, u8 op_modifier,
 			 u16 op, unsigned long timeout)
@@ -219,16 +235,8 @@ static int mlx4_cmd_poll(struct mlx4_device *dev, u64 in_param, u64 *out_param,
 
 	if (cmd_pending(dev)) {
 		DRIVER_LOG(DRIVER_PREFIX "timeout\n");
-		end = L4_ClockAddUsec(L4_SystemClock(), timeout*1000);
-		while (cmd_pending(dev) && L4_SystemClock().raw<end.raw)
-		{
-			L4_Yield();
-		}
-		if (cmd_pending(dev)) {
 		err = 1;
-		DRIVER_LOG(DRIVER_PREFIX "2nd timeout\n");
 		goto out;
-		}
 	}
 
 	if (out_is_imm)
@@ -238,9 +246,15 @@ static int mlx4_cmd_poll(struct mlx4_device *dev, u64 in_param, u64 *out_param,
 
 	err = mlx4_status_to_errno(bs32(*(UINT32*)(hcr + HCR_STATUS_OFFSET)) >> 24);
 out:
+	if (err)
+	{
+		DRIVER_LOG(DRIVER_PREFIX "mlx4_cmd_poll(%04X, %p, %p, %08X, %02X) failed\n", op, in_param, out_param ? *out_param : 0, in_modifier, op_modifier);
+		check_error(dev);
+	}
 //	up(&priv->cmd.poll_sem);
 	return err;
 }
+
 void mlx4_cmd_event(struct mlx4_device *dev, u16 token, u8 status, u64 out_param)
 {
 	struct mlx4_cmd_context *context = &dev->cmd.context[token & dev->cmd.token_mask];
@@ -252,7 +266,7 @@ void mlx4_cmd_event(struct mlx4_device *dev, u16 token, u8 status, u64 out_param
 	context->result = mlx4_status_to_errno(status);
 	context->out_param = out_param;
 
-//	complete(&context->done);
+	complete(&context->done);
 }
 
 static int mlx4_cmd_wait(struct mlx4_device *dev, u64 in_param, u64 *out_param,
@@ -274,11 +288,11 @@ static int mlx4_cmd_wait(struct mlx4_device *dev, u64 in_param, u64 *out_param,
 
 	init_completion(&context->done);
 
-	mlx4_cmd_post(dev, in_param, out_param ? *out_param : 0,
+	err = mlx4_cmd_post(dev, in_param, out_param ? *out_param : 0,
 		      in_modifier, op_modifier, op, context->token, 1);
-
-	if (!wait_for_completion_timeout(&context->done, (timeout))) {
-		DRIVER_LOG(DRIVER_PREFIX "wait_for_completion_timeout()\n");
+	if (!wait_for_completion_timeout(&context->done, timeout)) {
+		DRIVER_LOG(DRIVER_PREFIX "cmd(%p, %p, %p, %02X, %04X, %p): completion_timeout(%d)\n", in_param, out_param ? *out_param : 0, in_modifier, op_modifier, op, context->token, timeout);
+		
 		err = -1;
 		goto out;
 	}
@@ -402,19 +416,25 @@ void mlx4_cmd_use_polling(struct mlx4_device *dev)
 	//up(&priv->cmd.poll_sem);
 }
 
-static struct mlx4_cmd_mailbox g_mailbox;
-static int g_mailboxUsed = 0;
+#define MBX_SIZE 10
+static struct mlx4_cmd_mailbox g_mailbox[MBX_SIZE];
+static int g_mailboxUsed[MBX_SIZE] = {0,0,0,0,0,0,0,0,0,0};
 
 struct mlx4_cmd_mailbox *mlx4_alloc_cmd_mailbox(struct mlx4_device *dev)
 {	// TODO
-	if (g_mailboxUsed)
+	int i;
+	for (i=0; i<MBX_SIZE; i++)
 	{
-		DRIVER_LOG(DRIVER_PREFIX "mailbox already used\n");
-		return 0;
+		if (g_mailboxUsed[i]==0)
+		{
+			g_mailboxUsed[i] = 1;
+			if (g_mailbox[i].buf==0)
+				g_mailbox[i].buf = g_mailbox[i].dma = platform_mapAny(1<<12);
+			return &g_mailbox[i];
+		}
 	}
-	g_mailboxUsed = 1;
-	g_mailbox.buf = g_mailbox.dma = dev->cmd.pool;
-	return &g_mailbox;
+	DRIVER_LOG(DRIVER_PREFIX "all mailboxes already used\n");
+	return 0;
 	
 	struct mlx4_cmd_mailbox *mailbox;
 
@@ -436,11 +456,20 @@ void mlx4_free_cmd_mailbox(struct mlx4_device *dev, struct mlx4_cmd_mailbox *mai
 {
 	if (!mailbox)
 		return;
-	if (g_mailboxUsed==0)
+	int i;
+	for (i=0; i<MBX_SIZE; i++)
 	{
-		DRIVER_LOG(DRIVER_PREFIX "mailbox was not used! check accesses\n");
+		if (&g_mailbox[i]==mailbox)
+		{
+			if (g_mailboxUsed[i]==0)
+			{
+				DRIVER_LOG(DRIVER_PREFIX "mailbox was not used! check accesses\n");
+			}
+			g_mailboxUsed[i] = 0;
+			return;
+		}
 	}
-	g_mailboxUsed = 0;
+	DRIVER_LOG(DRIVER_PREFIX "unkown mailbox free! check accesses\n");
 //	pci_pool_free(mlx4_priv(dev)->cmd.pool, mailbox->buf, mailbox->dma);
 //	kfree(mailbox);
 }

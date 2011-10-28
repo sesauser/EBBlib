@@ -111,6 +111,7 @@ static inline void clear_bit(int nr, volatile unsigned long *addr)
  * to declare an array named 'name' of just enough unsigned longs to
  * contain all bit positions from 0 to 'bits' - 1.
  */
+#define DECLARE_BITMAP(name,bits) unsigned long name[BITS_TO_LONGS(bits)]
 
 /*
  * lib/bitmap.c provides these functions:

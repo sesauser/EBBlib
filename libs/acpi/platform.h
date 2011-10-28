@@ -161,12 +161,14 @@ static inline unsigned long ffz(unsigned long word)
 	__roundup_pow_of_two(n)			\
  )
 
-#ifdef __x86_64__
+#if defined(__x86_64__)
 #define mb() 	asm volatile("mfence":::"memory")
 #define rmb()	asm volatile("lfence":::"memory")
 #define wmb()	asm volatile("sfence" ::: "memory")
 #else
-#warning implement barriers for this platform
+#define mb() 	asm volatile("" ::: "memory");
+#define rmb() 	asm volatile("" ::: "memory");
+#define wmb() 	asm volatile("" ::: "memory");
 #endif
 
 #define mmiowb()	asm volatile("" ::: "memory")

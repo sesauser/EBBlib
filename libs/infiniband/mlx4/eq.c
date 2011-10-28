@@ -30,7 +30,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#define GFP_KERNEL 0
 
 #include "mlx4.h"
 #include "cmd.h"
@@ -38,12 +37,96 @@
 #include "../../acpi/platform.h"
 #include <l4/thread.h>
 #include <l4/kip.h>
+#include <l4/ipc.h>
 
-int request_irq(int irq)
+// use to sync startup of irq threads
+static struct completion irq_thread_completion;
+
+static int mlx4_msi_x_interrupt(int irq, void *eq_ptr);
+static int mlx4_interrupt(int irq, void *dev_ptr);
+// _p1 to _p6 are not used, just for the 2 params get read from stack
+static void __attribute__((noreturn)) irq_thread(L4_Word_t _p1, L4_Word_t _p2, L4_Word_t _p3, L4_Word_t _p4, L4_Word_t _p5, L4_Word_t _p6, int irq, void* eq_ptr, int shared)
 {
+	complete(&irq_thread_completion);
 	L4_ThreadId_t tid = L4_GlobalId(irq, 1);
-	L4_ThreadControl(tid, tid, L4_nilthread, L4_Myself(), -1);
-	return 1;
+	L4_MsgTag_t tag;
+	L4_Msg_t msg;
+	DRIVER_LOG(DRIVER_PREFIX "IRQ Thread started: %d, %p, %d\n", irq, eq_ptr, shared);
+	while (1)
+	{
+		tag = L4_Receive(tid);
+		while (1)
+		{
+			L4_MsgStore(tag, &msg);
+			if (L4_UntypedWords (tag) != 0 || L4_TypedWords (tag) != 0 ||
+				!L4_IpcSucceeded (tag) || L4_Label(tag)!=((~0) << 4))
+			{
+				DRIVER_LOG(DRIVER_PREFIX "IRQ(%d): malformed irq IPC from %p (tag=%p)\n", irq,
+					   (void *) tid.raw, (void *) tag.raw);
+				break;
+			}
+			DRIVER_LOG(DRIVER_PREFIX "received IRQ %X (%p)\n", irq, tid.raw);
+			if (shared)
+				mlx4_interrupt(irq, eq_ptr);
+			else
+				mlx4_msi_x_interrupt(irq, eq_ptr);
+			L4_MsgClear(&msg);
+			L4_MsgLoad(&msg);
+			tid = L4_GlobalId(irq, 1);
+			tag = L4_Call(tid);
+		}
+	}
+	DRIVER_LOG(DRIVER_PREFIX "IRQ Thread ended: %d, %p\n", irq, eq_ptr);
+	L4_Sleep(L4_Never);
+}
+
+static int request_irq(int irq, void *eq_ptr, int shared)
+{
+	char* stack = platform_mapAny(PAGE_SIZE);
+	if (stack==0)
+	{
+		DRIVER_LOG(DRIVER_PREFIX "couldn't allocate stack space\n");
+		return 1;
+	}
+	static L4_KernelInterfacePage_t* kip = 0;
+	static L4_Word_t utcbsize = 0;
+	if (kip==0)
+	{
+		kip = (L4_KernelInterfacePage_t *)L4_KernelInterface(0,0,0);
+		utcbsize = L4_UtcbSize(kip);
+	}
+	L4_ThreadId_t threadId = L4_GlobalId(L4_ThreadIdUserBase(kip) + 10 + irq, 1);
+	if (!L4_ThreadControl(threadId,	// new thread id
+	                      L4_Myself(),	// address space
+	                      L4_Myself(),	// scheduler
+	                      L4_Pager(),	// pager
+	                      ((void*)(((L4_Word_t)L4_MyLocalId().raw + utcbsize * (10 + irq)) & ~(utcbsize - 1)))))
+	{
+		DRIVER_LOG(DRIVER_PREFIX "couldn't create IRQ thread\n");
+		return 1;
+	}
+	L4_Word_t ip = (L4_Word_t)&irq_thread;
+	L4_Word_t sp = (L4_Word_t)(&stack[PAGE_SIZE - 1]);
+	// write parameters to stack
+	sp-= sizeof(L4_Word_t);
+	*((L4_Word_t*)sp) = (L4_Word_t)shared;
+	sp-= sizeof(L4_Word_t);
+	*((L4_Word_t*)sp) = (L4_Word_t)eq_ptr;
+	sp-= sizeof(L4_Word_t);
+	*((L4_Word_t*)sp) = (L4_Word_t)irq;
+	sp-= sizeof(L4_Word_t);	// calling convention...
+	init_completion(&irq_thread_completion);
+	wmb();
+	L4_Start_SpIp(threadId, sp, ip);
+
+	L4_ThreadId_t tid = L4_GlobalId(irq, 1);
+	if (L4_AssociateInterrupt(tid, threadId)!=1)
+	{
+		DRIVER_LOG(DRIVER_PREFIX "couldn't associate IRQ thread\n");
+		return 1;
+	}
+	wait_for_completion(&irq_thread_completion);
+	return 0;
 }
 
 enum {
@@ -56,18 +139,20 @@ enum {
 	MLX4_EQ_ENTRY_SIZE	= 0x20
 };
 
+#define __packed __attribute__ ((__packed__))
+
 /*
  * Must be packed because start is 64 bits but only aligned to 32 bits.
  */
+
 struct mlx4_eq_context {
 	u32			flags;
 	u16			reserved1[3];
 	u16			page_offset;
 	u8			log_eq_size;
-	u8			reserved2[4];
-	u8			eq_period;
-	u8			reserved3;
-	u8			eq_max_count;
+	u8			reserved2[3];
+	u16			eq_period;
+	u16			eq_max_count;
 	u8			reserved4[3];
 	u8			intr;
 	u8			log_page_size;
@@ -78,7 +163,7 @@ struct mlx4_eq_context {
 	u32			consumer_index;
 	u32			producer_index;
 	u32			reserved7[4];
-};
+} __packed;
 
 #define MLX4_EQ_STATUS_OK	   ( 0 << 28)
 #define MLX4_EQ_STATUS_WRITE_FAIL  (10 << 28)
@@ -105,7 +190,6 @@ struct mlx4_eq_context {
 			       (1ull << MLX4_EVENT_TYPE_SRQ_QP_LAST_WQE)    | \
 			       (1ull << MLX4_EVENT_TYPE_SRQ_LIMIT)	    | \
 			       (1ull << MLX4_EVENT_TYPE_CMD))
-#define __packed __attribute__ ((__packed__))
 struct mlx4_eqe {
 	u8			reserved1;
 	u8			type;
@@ -653,7 +737,6 @@ int mlx4_init_eq_table(struct mlx4_device *dev)
 		}
 	}
 
-
 	if (dev->flags & MLX4_FLAG_MSI_X) {
 		const char *eq_name;
 
@@ -674,9 +757,9 @@ int mlx4_init_eq_table(struct mlx4_device *dev)
 
 //			eq_name = dev->eq_table.irq_names +
 //				  i * MLX4_IRQNAME_SIZE;
-			err = 1;//request_irq(dev->eq_table.eq[i].irq,
+			err = request_irq(dev->eq_table.eq[i].irq,
 //					  mlx4_msi_x_interrupt, 0, eq_name,
-//					  dev->eq_table.eq + i);
+					  dev->eq_table.eq + i, 0);
 			if (err)
 			{
 				DRIVER_LOG(DRIVER_PREFIX "request irq failed\n");
@@ -690,8 +773,8 @@ int mlx4_init_eq_table(struct mlx4_device *dev)
 //			 MLX4_IRQNAME_SIZE,
 //			 DRV_NAME "@pci:%s",
 //			 pci_name(dev->pdev));
-		err = 0;//request_irq(dev->pdev->irq, mlx4_interrupt,
-			//	  IRQF_SHARED, dev->eq_table.irq_names, dev);
+		err = request_irq(dev->pcie.defaultIrq, dev, 1);
+				//	IRQF_SHARED, dev->eq_table.irq_names, dev);
 		if (err)
 		{
 			DRIVER_LOG(DRIVER_PREFIX "request irq failed\n");
@@ -814,10 +897,10 @@ int mlx4_assign_eq(struct mlx4_device *dev, char* name, int * vector)
 //			snprintf(dev->eq_table.irq_names +
 //					vec * MLX4_IRQNAME_SIZE,
 //					MLX4_IRQNAME_SIZE, "%s", name);
-			err = 1;//request_irq(dev->eq_table.eq[vec].irq,
+			err = request_irq(dev->eq_table.eq[vec].irq,
 				//	  mlx4_msi_x_interrupt, 0,
 				//	  &dev->eq_table.irq_names[vec<<5],
-				//	  dev->eq_table.eq + vec);
+					  dev->eq_table.eq + vec, 1);	// todo change on msi-x working
 			if (err) {
 				/*zero out bit by fliping it*/
 				dev->msix_ctl.pool_bm ^= 1 << i;
@@ -849,6 +932,7 @@ void mlx4_release_eq(struct mlx4_device *dev, int vec)
 		  Belonging to a legacy EQ*/
 		//spin_lock(&dev->msix_ctl.pool_lock);
 		if (dev->msix_ctl.pool_bm & 1ULL << i) {
+			DRIVER_LOG(DRIVER_PREFIX "free_irq %d\n", dev->eq_table.eq[vec].irq);
 //			free_irq(dev->eq_table.eq[vec].irq,
 //				 &dev->eq_table.eq[vec]);
 			dev->msix_ctl.pool_bm &= ~(1ULL << i);

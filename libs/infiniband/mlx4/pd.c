@@ -77,8 +77,7 @@ int mlx4_uar_alloc(struct mlx4_device *dev, struct mlx4_uar *uar)
 		return -1;
 
 	uar->pfn = (((u64)dev->uar)  >> PAGE_SHIFT) + uar->index;
-	uar->map = NULL;
-
+	uar->map = uar->pfn << PAGE_SHIFT;
 	return 0;
 }
 
@@ -187,7 +186,7 @@ int mlx4_init_uar_table(struct mlx4_device *dev)
 		DRIVER_LOG(DRIVER_PREFIX "Increase firmware log2_uar_bar_megabytes?\n");
 		return -1;
 	}
-
+DRIVER_LOG(DRIVER_PREFIX "mlx4_init_uar_table: %d, %d\n", dev->caps.num_uars, max(128, dev->caps.reserved_uars));
 	return mlx4_bitmap_init(&dev->uar_table.bitmap,
 				dev->caps.num_uars, dev->caps.num_uars - 1,
 				max(128, dev->caps.reserved_uars), 0);
