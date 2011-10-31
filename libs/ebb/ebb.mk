@@ -4,10 +4,10 @@ LIBS:=-lpthread -L$(IXPDIR)/lib -lixp -lpcap
 #CFLAGS := -O4 
 CFLAGS += -g 
 SRCS := CObjEBBRootShared.c CObjEBB.c CObjEBBRootMulti.c \
-	EBBEventMgrPrimImp.c EBBMgrPrim.c EBBMemMgrPrim.c \
+n	EBBEventMgrPrimImp.c EBBMgrPrim.c EBBMemMgrPrim.c \
 	EBBStart.c \
 	EBBCtrPrim.c EBBCtrPrimDistributed.c \
-	EthMgrPrim.c 
+	EthMgrPrim.c MsgMgrPrim.c
 
 OBJS := $(patsubst %.c, %.o, $(filter %.c, $(SRCS)))
 OBJS += $(patsubst %.S, %.o, $(filter %.S, $(SRCS)))

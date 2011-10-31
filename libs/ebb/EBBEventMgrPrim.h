@@ -28,8 +28,20 @@ CObject(EBBEventMgrPrim) {
   CObjInterface(EBBEventMgrPrim) *ft;
 };
 
+
+
 typedef EBBEventMgrPrimRef *EBBEventMgrPrimId;
 // the ID of the one and only event manager
 extern EBBEventMgrPrimId theEBBEventMgrPrimId;
+
+/*
+ * You need to be able to get the event location of the 
+ * node you are running on.  I am not making this a 
+ * function on EventMgr, but rather a global function
+ * so its clear that its the EL of the current core and not
+ * the EL of the rep of the EventMgr
+ */
+typedef uval EvntLoc;
+extern EvntLoc  EBBEventMgrPrim_GetMyEL();
 
 #endif

@@ -423,12 +423,19 @@ EBBEventMgrPrimImpInit(void)
   rootRef->ft->init(rootRef, &theRep);
 
   rc = EBBAllocPrimId(&theEBBEventMgrPrimId);
-  //  EBBRCAssert(rc);
+  EBBRCAssert(rc);
 
   rc = CObjEBBBind(theEBBEventMgrPrimId, rootRef); 
-  //  EBBRCAssert(rc);
+  EBBRCAssert(rc);
   return EBBRC_OK;
 };
+
+EvntLoc 
+EBBEventMgrPrim_GetMyEL()
+{
+  return lrt_pic_myid;
+};
+
 
 #if 0
 static EBBRC 
