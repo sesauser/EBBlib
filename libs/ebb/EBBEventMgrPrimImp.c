@@ -53,6 +53,9 @@ repInit(EBBEventMgrPrimImpRef rep)
 
 EBBEventMgrPrimImp theRep;
 
+// FIXME: don't depend on statically allocated, can 
+
+
 // define vector functions that map vectors to events
 // each function call's the appropriate handler installed
 // for the corresponding event that the vector is mapped to
@@ -61,7 +64,10 @@ EBBEventMgrPrimImp theRep;
 #define VFUNC(i)					\
 static void vf##i(void)		    		        \
 {							\
-  EBBCALL(theRep.handlerInfo[i].id, handleEvent);	\
+  EBBEventHandlerId handler;                            \
+  EBBCALL(theEBBEventMgrPrimId, getHandler, i,  &handler); \
+  EBBAssert(handler != NULL);                            \
+  EBBCALL(handler, handleEvent);	                \
 }		
 
 VFUNC(0);
@@ -352,6 +358,14 @@ vfunc vfTbl[MAXEVENTS] = {
 };
 
 static EBBRC
+EventMgrPrim_getHandler(void *_self, uval eventNo, EBBEventHandlerId *handler)
+{
+  EBBEventMgrPrimImpRef self = _self;
+  *handler = self->handlerInfo[eventNo].id;
+  return EBBRC_OK;
+}
+
+static EBBRC
 EventMgrPrim_registerHandler(void *_self, uval eventNo, 
 			     EBBEventHandlerId handler, 
 			     uval isrc)
@@ -390,6 +404,7 @@ EventMgrPrim_allocEventNo(void *_self, uval *eventNoPtr)
 }
 
 CObjInterface(EBBEventMgrPrim) EBBEventMgrPrimImp_ftable = {
+  .getHandler = EventMgrPrim_getHandler,
   .registerHandler = EventMgrPrim_registerHandler, 
   .allocEventNo = EventMgrPrim_allocEventNo, 
 };

@@ -18,9 +18,13 @@ CObject(EBBEventHandler) {
 typedef EBBEventHandlerRef *EBBEventHandlerId;
 
 CObjInterface(EBBEventMgrPrim) {
-  EBBRC (*registerHandler) (void *_self, uval eventNo,
+  // get handler, possibly on this core, needed to dispatch interupt
+  EBBRC (*getHandler) (void *_self, uval eventNo, EBBEventHandlerId *handler); 
+
+  EBBRC (*registerHandler) (void *_self, uval eventNo, 
 			    EBBEventHandlerId handler, 
 			    uval isrc);
+
   EBBRC (*allocEventNo) (void *_self, uval *eventNoPtr);
 };
 
