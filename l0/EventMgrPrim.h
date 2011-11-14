@@ -1,7 +1,7 @@
 #ifndef __EVENTMGR_H__
-#define __EVENTMGR_H__
+#  define __EVENTMGR_H__
 
-/* 
+/*
  * All event handling ebbs must conform to these types
  * Any existing ebbs that want to handle events must be
  * frontended by an event handler EBB
@@ -12,26 +12,26 @@ CObjInterface(EventHandler) {
 };
 
 CObject(EventHandler) {
-  CObjInterface(EventHandler) *ft;
+  CObjInterface(EventHandler) * ft;
 };
 
 typedef EventHandlerRef *EventHandlerId;
 
 CObjInterface(EventMgrPrim) {
   // get handler, possibly on this core, needed to dispatch interupt
-  EBBRC (*getHandler) (void *_self, uval eventNo, EventHandlerId *handler); 
+  EBBRC (*getHandler) (void *_self, uval eventNo, EventHandlerId * handler);
 
-  EBBRC (*registerHandler) (void *_self, uval eventNo,
-			    EventHandlerId handler, 
+  EBBRC (*registerHandler) (void *_self, uval eventNo, EventHandlerId handler,
 			    uval isrc);
-  EBBRC (*allocEventNo) (void *_self, uval *eventNoPtr);
+  EBBRC (*allocEventNo) (void *_self, uval * eventNoPtr);
 };
 
 CObject(EventMgrPrim) {
-  CObjInterface(EventMgrPrim) *ft;
+  CObjInterface(EventMgrPrim) * ft;
 };
 
 typedef EventMgrPrimRef *EventMgrPrimId;
+
 // the ID of the one and only event manager
 extern EventMgrPrimId theEventMgrPrimId;
 
@@ -43,6 +43,6 @@ extern EventMgrPrimId theEventMgrPrimId;
  * the EL of the rep of the EventMgr
  */
 typedef uval EvntLoc;
-extern EvntLoc  EventMgrPrim_GetMyEL();
+extern EvntLoc EventMgrPrim_GetMyEL();
 
 #endif

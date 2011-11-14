@@ -1,3 +1,4 @@
+
 /******************************************************************************
  * K42: (C) Copyright IBM Corp. 2000.
  * All Rights Reserved
@@ -8,6 +9,7 @@
  *
  * $Id: asm.h,v 1.41 2004/06/28 17:01:25 rosnbrg Exp $
  *****************************************************************************/
+
 /*****************************************************************************
  * Module Description: support routines for hand-written assembler
  * **************************************************************************/
@@ -17,12 +19,12 @@
 #define GLBL_LABEL(x) .globl x; x:
 
 #ifdef __GNU_AS__
-#define FUNCDESC(x,f) \
+#  define FUNCDESC(x,f) \
 	 .section ".opd","aw"; .align 3; GLBL_LABEL(x) .quad f,.TOC.@tocbase, 0; .previous; .size x,24;
-#else	/* #ifdef __GNU_AS__ */
-#define FUNCDESC(x,f) \
+#else /* #ifdef __GNU_AS__ */
+#  define FUNCDESC(x,f) \
 	.toc; .csect x##[DS],3; GLBL_LABEL(x) .llong f,TOC[tc0],0;
-#endif	/* #ifdef __GNU_AS__ */
+#endif /* #ifdef __GNU_AS__ */
 
 #define ENTRY_POINT_DESC(label, symbol) FUNCDESC(label, CODE(symbol))
 
@@ -35,14 +37,16 @@
 #define C_DATA_LABEL(x) GLBL_LABEL(C_DATA(x))
 
 #ifdef __GNU_AS__
-/* FIXME: I believe that this .align is useless -JX */
-#define TEXT_ALIGN(x)	\
+/*
+ * FIXME: I believe that this .align is useless -JX 
+ */
+#  define TEXT_ALIGN(x)	\
 	.text; .align (x)
-#define TEXT_TYPE_DECL(x)  \
+#  define TEXT_TYPE_DECL(x)  \
 	.type x,@function
 #else
-#define TEXT_TYPE_DECL(x)
-#define	TEXT_ALIGN(x)	\
+#  define TEXT_TYPE_DECL(x)
+#  define	TEXT_ALIGN(x)	\
 	.csect .text[PR],(x)
 #endif
 
@@ -53,15 +57,15 @@
 
 // FIXME: this extra mangling the '-' works aroung bugs in gcc 2 and 3 -JX
 #ifdef __GNU_AS__
-#define BEGIN_LINES(x)
-#define END_LINES(x)
-#else	/* #ifdef __GNU_AS__ */
-#define BEGIN_LINES(x) \
+#  define BEGIN_LINES(x)
+#  define END_LINES(x)
+#else /* #ifdef __GNU_AS__ */
+#  define BEGIN_LINES(x) \
 	.stabx	STRINGIFY(x:F-1),x,142,0; \
 	.function x,x,16,44,FE.._ ## x - x
-#define END_LINES(x) \
+#  define END_LINES(x) \
 	FE.._ ## x :
-#endif	/* #ifdef __GNU_AS__ */
+#endif /* #ifdef __GNU_AS__ */
 
 #define CODE_BASIC_ENTRY(x) \
 	BASIC_ENTRY(CODE(x))
@@ -71,7 +75,7 @@
 
 #define CODE_ENTRY(x) \
 	BASIC_ENTRY(CODE(x)); \
-	BEGIN_LINES(x) /* see NOTE below */
+	BEGIN_LINES(x)		/* see NOTE below */
 
 #define CODE_END(x) \
 	END_LINES(x) /* see NOTE below */ \
@@ -87,7 +91,7 @@
 #define C_TEXT_ENTRY(x) \
 	FUNCDESC(x, C_TEXT(x)); \
 	BASIC_ENTRY(C_TEXT(x)); \
-	BEGIN_LINES(. ## x) /* see NOTE below */
+	BEGIN_LINES(. ## x)	/* see NOTE below */
 
 #define C_TEXT_END(x) \
 	END_LINES(. ## x) /* see NOTE below */ \
@@ -100,38 +104,38 @@
  */
 
 #ifdef	__GNU_AS__
-#define C_DATA_ENTRY(x) \
+#  define C_DATA_ENTRY(x) \
 	.section ".data"; .align 3; GLBL_LABEL(C_DATA(x))
-#define C_DATA_ENTRY_ALIGNED(x,alignment) \
+#  define C_DATA_ENTRY_ALIGNED(x,alignment) \
 	.section ".data"; .align alignment; GLBL_LABEL(C_DATA(x))
-#else	/*  __GNU_AS__ */
-#define C_DATA_ENTRY(x) \
+#else /* __GNU_AS__ */
+#  define C_DATA_ENTRY(x) \
 	.csect .data[RW],3; GLBL_LABEL(C_DATA(x))
-#define C_DATA_ENTRY_ALIGNED(x,alignment) \
+#  define C_DATA_ENTRY_ALIGNED(x,alignment) \
 	.csect .data[RW],alignment; GLBL_LABEL(C_DATA(x))
-#endif	/* __GNU_AS__ */
+#endif /* __GNU_AS__ */
 
 #define TOC_CODE_SYM(symbol) symbol##.TE
 #define TOC_C_TEXT_SYM(symbol) .##symbol##.TE
 #define TOC_C_DATA_SYM(symbol) symbol##.TE
 
 #ifdef __GNU_AS__
-#define TOC_CODE_ENTRY(symbol) \
+#  define TOC_CODE_ENTRY(symbol) \
 	.section ".toc","aw"; TOC_CODE_SYM(symbol): .tc symbol##[TC],symbol; .previous
 
-#define TOC_C_TEXT_ENTRY(symbol) \
+#  define TOC_C_TEXT_ENTRY(symbol) \
 	.section ".toc","aw"; TOC_C_TEXT_SYM(symbol): .tc .##symbol##[TC],.##symbol; .previous
 
-#define TOC_C_DATA_ENTRY(symbol) \
+#  define TOC_C_DATA_ENTRY(symbol) \
 	.section ".toc","aw"; TOC_C_DATA_SYM(symbol): .tc symbol##[TC],symbol; .previous
 #else
-#define TOC_CODE_ENTRY(symbol) \
+#  define TOC_CODE_ENTRY(symbol) \
 	.toc; TOC_CODE_SYM(symbol): .tc symbol##[TC],symbol
 
-#define TOC_C_TEXT_ENTRY(symbol) \
+#  define TOC_C_TEXT_ENTRY(symbol) \
 	.toc; TOC_C_TEXT_SYM(symbol): .tc .##symbol##[TC],.##symbol
 
-#define TOC_C_DATA_ENTRY(symbol) \
+#  define TOC_C_DATA_ENTRY(symbol) \
 	.toc; TOC_C_DATA_SYM(symbol): .tc symbol##[TC],symbol
 #endif
 
@@ -216,13 +220,14 @@
 
 #ifndef __ASSEMBLER__
 struct NonvolatileState {
-    uval64 r14,r15,r16,r17,r18,r19,r20,r21,r22,
-	   r23,r24,r25,r26,r27,r28,r29,r30,r31;
-    uval64 f14,f15,f16,f17,f18,f19,f20,f21,f22,
-	   f23,f24,f25,f26,f27,f28,f29,f30,f31;
-    
-    void init() { memset(this, 0, sizeof(*this)); }
-};
+  uval64 r14, r15, r16, r17, r18, r19, r20, r21, r22, r23, r24, r25, r26, r27,
+    r28, r29, r30, r31;
+  uval64 f14, f15, f16, f17, f18, f19, f20, f21, f22, f23, f24, f25, f26, f27,
+    f28, f29, f30, f31;
+
+  void init() {
+    memset(this, 0, sizeof(*this));
+}};
 #endif // !__ASSEMBLER__
 
 #define NVS_SIZE ((18+18)*8)
@@ -330,12 +335,12 @@ struct NonvolatileState {
 
 // GAS and AIX disagree on the '<' vs '<<' operator
 #ifndef __GNU_AS__
-#define SHIFT_R(a,r) ((a)>(r))
-#define SHIFT_L(a,l) ((a)<(l))
-#define CHECK_SPACE(l,a) .space	(l) + SHIFT_L(1,(a)) - $
+#  define SHIFT_R(a,r) ((a)>(r))
+#  define SHIFT_L(a,l) ((a)<(l))
+#  define CHECK_SPACE(l,a) .space	(l) + SHIFT_L(1,(a)) - $
 #else /* #ifndef __GNU_AS__ */
-#define SHIFT_R(a,r) ((a)>>(r))
-#define SHIFT_L(a,l) ((a)<<(l))
+#  define SHIFT_R(a,r) ((a)>>(r))
+#  define SHIFT_L(a,l) ((a)<<(l))
 /*
  * GNU as(1) warns if ".space 0" which is a valid value for our
  * purposes here.  Furthermore, if the expression is < 0 GNU as(1)
@@ -343,7 +348,7 @@ struct NonvolatileState {
  * negative case.
  * NOTE: .elseif is the same as '.else .ifne'
  */
-#define CHECK_SPACE(l,a) \
+#  define CHECK_SPACE(l,a) \
 	.ifgt ((l) + SHIFT_L(1,(a)) - $) ;				\
 	    .space (l) + SHIFT_L(1,(a)) - $ ;				\
 	.elseif ((l) + SHIFT_L(1,(a)) - $) ;				\
@@ -353,7 +358,7 @@ struct NonvolatileState {
 
 #endif /* #ifndef __GNU_AS__ */
 
-// WARNING:  This macro must be kept consistent with _SERROR in SysStatus.H.
+// WARNING: This macro must be kept consistent with _SERROR in SysStatus.H.
 #define SERROR(reg,ec,cc,gc) \
 	lis	reg,0x8000|(SHIFT_R((ec),32)&0xffff); \
 	ori	reg,reg,(SHIFT_R((ec),16)&0xffff); \
