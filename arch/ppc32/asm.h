@@ -227,7 +227,8 @@ struct NonvolatileState {
 
   void init() {
     memset(this, 0, sizeof(*this));
-}};
+  }
+};
 #endif // !__ASSEMBLER__
 
 #define NVS_SIZE ((18+18)*8)

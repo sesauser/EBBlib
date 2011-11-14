@@ -107,7 +107,9 @@
 #    define DEBUG_POP_FRAME1()
 #    define DEBUG_POP_FRAME2()
 #  else
-      /* #ifdef NDEBUG */
+      /*
+       * #ifdef NDEBUG 
+       */
 #    define DEBUG_PUSH_FRAME1()	\
         pushq   %rbp;
 #    define DEBUG_POP_FRAME1() 	\
@@ -117,7 +119,9 @@
 #    define DEBUG_POP_FRAME2() 	\
         movq    %rbp,%rsp;
 #  endif
-       /* #ifdef NDEBUG */
+       /*
+        * #ifdef NDEBUG 
+        */
 
 
 // The following may or may not push %rbp (depending on whether we

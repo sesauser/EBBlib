@@ -157,7 +157,7 @@ EBBGTransToLTrans(EBBGTrans * gt) {
 
 struct EBBTransLSysStruct {
   EBBGTrans *gTable;		// our portion of the gtable for allocating
-				// local ebbs
+  // local ebbs
   EBBLTrans *lTable;
   EBBGTrans *free;
   uval numAllocated;

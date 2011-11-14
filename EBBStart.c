@@ -8,7 +8,7 @@
 #include <l0/types.h>
 #include <l0/cobj/CObjEBB.h>
 #include <l0/EBBMgrPrim.h>
-#include <l0/MemMgr.h> 
+#include <l0/MemMgr.h>
 #include <l0/MemMgrPrim.h>
 #include <l0/EventMgrPrim.h>
 #include <l0/EventMgrPrimImp.h>
@@ -19,15 +19,14 @@
 #include <misc/CtrPrim.h>
 
 pthread_key_t ELKey;
-static void 
-kludge(void)
-{
+static void
+kludge(void) {
   EBBRC rc;
   EthMgrId ethmgr;
   EBBCtrId ctr;
 
-    EBB_LRT_printf("%s: start\n", __func__);
-  pthread_setspecific(ELKey, (void *)lrt_pic_myid);
+  EBB_LRT_printf("%s: start\n", __func__);
+  pthread_setspecific(ELKey, (void *) lrt_pic_myid);
 
   EBBMgrPrimInit();
   rc = EBBMemMgrPrimInit();
@@ -42,24 +41,28 @@ kludge(void)
 }
 
 void
-ipihdlr(void)
-{
+ipihdlr(void) {
   lrt_pic_ackipi();
   fprintf(stderr, "%ld", lrt_pic_myid);
   fflush(stderr);
   sleep(2);
   lrt_pic_enableipi();
   // pass the ipi along to the next lrt
-  lrt_pic_ipi((lrt_pic_myid+1)%(lrt_pic_lastid+1));
+  lrt_pic_ipi((lrt_pic_myid + 1) % (lrt_pic_lastid + 1));
 }
 
 
 void
-EBBStart(void)
-{
-  /* Three main EBB's are EBBMgrPrim, EventMgrPrim EBBMemMgrPrim    */
-  /* There creation and initialization are interdependent and requires */
-  /* fancy footwork */
+EBBStart(void) {
+  /*
+   * Three main EBB's are EBBMgrPrim, EventMgrPrim EBBMemMgrPrim 
+   */
+  /*
+   * There creation and initialization are interdependent and requires 
+   */
+  /*
+   * fancy footwork 
+   */
 
   // put code here to get preboot versions of l0 EBBs ready
 

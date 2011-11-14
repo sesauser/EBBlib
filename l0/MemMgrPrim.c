@@ -15,48 +15,45 @@
 static uval8 theMemory[MEMSIZE];
 
 static EBBRC
-EBBMemMgrPrim_init(void *_self)
-{
+EBBMemMgrPrim_init(void *_self) {
   EBBMemMgrPrimRef self = _self;
+
   self->mem = theMemory;
   self->len = MEMSIZE;
   return EBBRC_OK;
 }
 
-//just grab from the beginning of the memory and move
-//the pointer forward until we run out
+// just grab from the beginning of the memory and move
+// the pointer forward until we run out
 static EBBRC
-EBBMemMgrPrim_alloc(void *_self, uval size, void *mem, EBB_MEM_POOL pool)
-{
+EBBMemMgrPrim_alloc(void *_self, uval size, void *mem, EBB_MEM_POOL pool) {
   EBBMemMgrPrimRef self = _self;
+
   if (size > self->len) {
-    *((void **)mem) = NULL; //Do I return some error code here??
+    *((void **) mem) = NULL;	// Do I return some error code here??
   } else {
-    *((void **)mem) = self->mem;
+    *((void **) mem) = self->mem;
     self->mem += size;
     self->len -= size;
   }
   return EBBRC_OK;
 }
 
-//freeing is a nop in this implementation
+// freeing is a nop in this implementation
 static EBBRC
 EBBMemMgrPrim_free(void *_self, void *mem) {
   return EBBRC_OK;
 }
 
 CObjInterface(EBBMemMgr) EBBMemMgrPrim_ftable = {
-  .init = EBBMemMgrPrim_init, 
-  .alloc = EBBMemMgrPrim_alloc, 
-  .free = EBBMemMgrPrim_free
-};
+.init = EBBMemMgrPrim_init,.alloc = EBBMemMgrPrim_alloc,.free =
+    EBBMemMgrPrim_free};
 
 
 EBBMemMgrPrimRef *theEBBMemMgrPrimId;
 
 EBBRC
-EBBMemMgrPrimInit()
-{
+EBBMemMgrPrimInit() {
   EBBRC rc;
   static EBBMemMgrPrim theRep;
   static CObjEBBRootShared theRoot;
@@ -74,10 +71,10 @@ EBBMemMgrPrimInit()
   rootRef->ft->init(rootRef, &theRep);
 
   rc = EBBAllocPrimId(&theEBBMemMgrPrimId);
-  //  EBBRCAssert(rc);
+  // EBBRCAssert(rc);
 
-  rc = CObjEBBBind(theEBBMemMgrPrimId, rootRef); 
-  //  EBBRCAssert(rc);
+  rc = CObjEBBBind(theEBBMemMgrPrimId, rootRef);
+  // EBBRCAssert(rc);
 
   return EBBRC_OK;
 }

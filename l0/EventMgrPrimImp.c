@@ -22,31 +22,31 @@
  */
 #define EBBCALL(id, method, ...) COBJ_EBBCALL(id, method, ##__VA_ARGS__)
 
-/* 
+/*
  * This is the one and only implementation we have today of EventMgrPrim
  Doing:
  o do the wrapper, simple unit test that invokes local object
  o look at how node number is assigned in one of the distributed
-   implementations of object
- */ 
+ implementations of object
+ */
 
-typedef struct  {
+typedef struct {
   EventHandlerId id;
 } HandlerInfoStruc;
 
 #define MAXEVENTS 256
 
-CObject(EventMgrPrimImp){
-  CObjInterface(EventMgrPrim) *ft;
+CObject(EventMgrPrimImp) {
+  CObjInterface(EventMgrPrim) * ft;
   HandlerInfoStruc handlerInfo[MAXEVENTS];
 };
 
 static void
-repInit(EventMgrPrimImpRef rep)
-{
+repInit(EventMgrPrimImpRef rep) {
   uval i;
 
-  for (i=0; i<MAXEVENTS; i++) rep->handlerInfo[i].id=NULLId;
+  for (i = 0; i < MAXEVENTS; i++)
+    rep->handlerInfo[i].id = NULLId;
 }
 
 EventMgrPrimImp theRep;
@@ -63,7 +63,7 @@ static void vf##i(void)		    		        \
   EBBCALL(theEventMgrPrimId, getHandler, i,  &handler); \
   EBBAssert(handler != NULL);                            \
   EBBCALL(handler, handleEvent);	                \
-}		
+}
 
 VFUNC(0);
 VFUNC(1);
@@ -322,7 +322,7 @@ VFUNC(253);
 VFUNC(254);
 VFUNC(255);
 
-typedef void (*vfunc)(void);
+typedef void (*vfunc) (void);
 vfunc vfTbl[MAXEVENTS] = {
   vf0, vf1, vf2, vf3, vf4, vf5, vf6, vf7, vf8, vf9,
   vf10, vf11, vf12, vf13, vf14, vf15, vf16, vf17, vf18, vf19,
@@ -334,44 +334,42 @@ vfunc vfTbl[MAXEVENTS] = {
   vf70, vf71, vf72, vf73, vf74, vf75, vf76, vf77, vf78, vf79,
   vf80, vf81, vf82, vf83, vf84, vf85, vf86, vf87, vf88, vf89,
   vf90, vf91, vf92, vf93, vf94, vf95, vf96, vf97, vf98, vf99,
-  vf100, vf101, vf102, vf103, vf104, vf105, vf106, vf107, vf108, vf109, 
-  vf110, vf111, vf112, vf113, vf114, vf115, vf116, vf117, vf118, vf119, 
-  vf120, vf121, vf122, vf123, vf124, vf125, vf126, vf127, vf128, vf129, 
-  vf130, vf131, vf132, vf133, vf134, vf135, vf136, vf137, vf138, vf139, 
-  vf140, vf141, vf142, vf143, vf144, vf145, vf146, vf147, vf148, vf149, 
-  vf150, vf151, vf152, vf153, vf154, vf155, vf156, vf157, vf158, vf159, 
-  vf160, vf161, vf162, vf163, vf164, vf165, vf166, vf167, vf168, vf169, 
-  vf170, vf171, vf172, vf173, vf174, vf175, vf176, vf177, vf178, vf179, 
-  vf180, vf181, vf182, vf183, vf184, vf185, vf186, vf187, vf188, vf189, 
-  vf190, vf191, vf192, vf193, vf194, vf195, vf196, vf197, vf198, vf199, 
-  vf200, vf201, vf202, vf203, vf204, vf205, vf206, vf207, vf208, vf209, 
-  vf210, vf211, vf212, vf213, vf214, vf215, vf216, vf217, vf218, vf219, 
-  vf220, vf221, vf222, vf223, vf224, vf225, vf226, vf227, vf228, vf229, 
-  vf230, vf231, vf232, vf233, vf234, vf235, vf236, vf237, vf238, vf239, 
-  vf240, vf241, vf242, vf243, vf244, vf245, vf246, vf247, vf248, vf249, 
+  vf100, vf101, vf102, vf103, vf104, vf105, vf106, vf107, vf108, vf109,
+  vf110, vf111, vf112, vf113, vf114, vf115, vf116, vf117, vf118, vf119,
+  vf120, vf121, vf122, vf123, vf124, vf125, vf126, vf127, vf128, vf129,
+  vf130, vf131, vf132, vf133, vf134, vf135, vf136, vf137, vf138, vf139,
+  vf140, vf141, vf142, vf143, vf144, vf145, vf146, vf147, vf148, vf149,
+  vf150, vf151, vf152, vf153, vf154, vf155, vf156, vf157, vf158, vf159,
+  vf160, vf161, vf162, vf163, vf164, vf165, vf166, vf167, vf168, vf169,
+  vf170, vf171, vf172, vf173, vf174, vf175, vf176, vf177, vf178, vf179,
+  vf180, vf181, vf182, vf183, vf184, vf185, vf186, vf187, vf188, vf189,
+  vf190, vf191, vf192, vf193, vf194, vf195, vf196, vf197, vf198, vf199,
+  vf200, vf201, vf202, vf203, vf204, vf205, vf206, vf207, vf208, vf209,
+  vf210, vf211, vf212, vf213, vf214, vf215, vf216, vf217, vf218, vf219,
+  vf220, vf221, vf222, vf223, vf224, vf225, vf226, vf227, vf228, vf229,
+  vf230, vf231, vf232, vf233, vf234, vf235, vf236, vf237, vf238, vf239,
+  vf240, vf241, vf242, vf243, vf244, vf245, vf246, vf247, vf248, vf249,
   vf250, vf251, vf252, vf253, vf254, vf255
 };
 
 
 static EBBRC
-EventMgrPrim_getHandler(void *_self, uval eventNo, EventHandlerId *handler)
-{
+EventMgrPrim_getHandler(void *_self, uval eventNo, EventHandlerId * handler) {
   EventMgrPrimImpRef self = _self;
+
   *handler = self->handlerInfo[eventNo].id;
   return EBBRC_OK;
 }
 
 static EBBRC
-EventMgrPrim_registerHandler(void *_self, uval eventNo, 
-			     EventHandlerId handler, 
-			     uval isrc)
-{
+EventMgrPrim_registerHandler(void *_self, uval eventNo,
+			     EventHandlerId handler, uval isrc) {
   EventMgrPrimImpRef self = _self;
 
-  if ( (eventNo >= MAXEVENTS) || (eventNo<0) ){
+  if ((eventNo >= MAXEVENTS) || (eventNo < 0)) {
     return EBBRC_BADPARAMETER;
   };
-  
+
   if (self->handlerInfo[eventNo].id != NULLId) {
     // for now, if its not null, assume error, should we ever be able
     // to change the handler for an event?
@@ -384,7 +382,7 @@ EventMgrPrim_registerHandler(void *_self, uval eventNo,
   // for the moment we are hard coding that when 
   // you map a vector it is only active on this el
   // map vector in pic
-  if (lrt_pic_mapvec((lrt_pic_src)isrc, eventNo, vfTbl[eventNo])<0) {
+  if (lrt_pic_mapvec((lrt_pic_src) isrc, eventNo, vfTbl[eventNo]) < 0) {
     self->handlerInfo[eventNo].id = NULLId;
     return EBBRC_BADPARAMETER;
   }
@@ -392,30 +390,26 @@ EventMgrPrim_registerHandler(void *_self, uval eventNo,
   return 0;
 }
 
-static EBBRC 
-EventMgrPrim_allocEventNo(void *_self, uval *eventNoPtr)
-{
-  if (lrt_pic_allocvec(eventNoPtr)<0) return EBBRC_OUTOFRESOURCES;
+static EBBRC
+EventMgrPrim_allocEventNo(void *_self, uval * eventNoPtr) {
+  if (lrt_pic_allocvec(eventNoPtr) < 0)
+    return EBBRC_OUTOFRESOURCES;
   return EBBRC_OK;
 }
 
 CObjInterface(EventMgrPrim) EventMgrPrimImp_ftable = {
-  .getHandler = EventMgrPrim_getHandler,
-  .registerHandler = EventMgrPrim_registerHandler, 
-  .allocEventNo = EventMgrPrim_allocEventNo, 
-};
+.getHandler = EventMgrPrim_getHandler,.registerHandler =
+    EventMgrPrim_registerHandler,.allocEventNo = EventMgrPrim_allocEventNo,};
 
 static void
-EventMgrPrimSetFT(EventMgrPrimImpRef o)
-{
+EventMgrPrimSetFT(EventMgrPrimImpRef o) {
   o->ft = &EventMgrPrimImp_ftable;
 }
 
 EventMgrPrimId theEventMgrPrimId;
 
 EBBRC
-EventMgrPrimImpInit(void)
-{
+EventMgrPrimImpInit(void) {
   EBBRC rc;
   static CObjEBBRootShared theRoot;
   EventMgrPrimImpRef repRef = &theRep;
@@ -434,50 +428,46 @@ EventMgrPrimImpInit(void)
   rootRef->ft->init(rootRef, &theRep);
 
   rc = EBBAllocPrimId(&theEventMgrPrimId);
-  //  EBBRCAssert(rc);
+  // EBBRCAssert(rc);
 
-  rc = CObjEBBBind(theEventMgrPrimId, rootRef); 
-  //  EBBRCAssert(rc);
+  rc = CObjEBBBind(theEventMgrPrimId, rootRef);
+  // EBBRCAssert(rc);
   return EBBRC_OK;
 };
 
-EvntLoc 
-EventMgrPrim_GetMyEL()
-{
+EvntLoc
+EventMgrPrim_GetMyEL() {
   return lrt_pic_myid;
 };
 
 #if 0
-static EBBRC 
-EventHandler_handleEvent(void *_self)
-{
+static EBBRC
+EventHandler_handleEvent(void *_self) {
   EBB_LRT_printf("Wheeeee Handler Invoked\n");
   return 0;
 };
 
 static EBBRC
-EventHandler_init(void *_self)
-{
+EventHandler_init(void *_self) {
   return 0;
 };
 
 
-static CObjInterface(EventHandler) EventHandler_ftable = {
-  .handleEvent = EventHandler_handleEvent,
-  .init = EventHandler_init
-};
+static
+CObjInterface(EventHandler)
+  EventHandler_ftable = {
+.handleEvent = EventHandler_handleEvent,.init = EventHandler_init};
 
 
 // change to dynamically allocate this
 static EventHandlerId
-CreateTestHandler()
-{
+CreateTestHandler() {
   EBBRC rc;
   static EventHandler theRep;
   EventHandlerRef repRef = &theRep;
   static CObjEBBRootShared theRoot;
   CObjEBBRootSharedRef rootRef = &theRoot;
-  EventHandlerId handlerId; 
+  EventHandlerId handlerId;
 
   // setup function tables
   CObjEBBRootSharedSetFT(rootRef);
@@ -490,17 +480,19 @@ CreateTestHandler()
   rootRef->ft->init(rootRef, &theRep);
 
   rc = EBBAllocPrimId(&handlerId);
-  //  EBBRCAssert(rc);
+  // EBBRCAssert(rc);
 
-  rc = CObjEBBBind(handlerId, rootRef); 
-  //  EBBRCAssert(rc);
+  rc = CObjEBBBind(handlerId, rootRef);
+  // EBBRCAssert(rc);
 
   return handlerId;
 }
 
-/* move to a seperate file eventually, should not be imp specific */
-void EventMgrPrimImpTest(void) 
-{
+/*
+ * move to a seperate file eventually, should not be imp specific 
+ */
+void
+EventMgrPrimImpTest(void) {
   EventHandlerId handlerId;
   int eventNo;
 
