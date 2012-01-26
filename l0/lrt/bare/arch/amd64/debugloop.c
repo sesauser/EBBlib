@@ -86,6 +86,7 @@ readhexnum(uintptr_t *num, uintptr_t cookie) {
   *num = 0;
   c = serial_getc(cookie);
   while((xdigit = xdigit_value(c)) != XDIGIT_INVALID) {
+    *num *= 16;
     *num += xdigit;
     c = serial_getc(cookie);
   }
