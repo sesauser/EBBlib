@@ -134,8 +134,8 @@ prints(const char *str, int width, int precision, unsigned char flags,
 }
 
 static int printi(long long val, unsigned int base, int sign,
-		  int width, int precision,
-		  unsigned char flags, char cbase, FILE *stream) {
+                  int width, int precision,
+                  unsigned char flags, char cbase, FILE *stream) {
   char print_buf[PRINT_BUF_LEN];
   int pos = 0;
   int neg = 0;
@@ -203,93 +203,93 @@ vfprintf(FILE *stream, const char *format, va_list ap)
   for (; *format != '\0'; format++) {
     if (*format == '%') {
       if (*(++format) == '%') {
-	goto printit;
+        goto printit;
       }
       flags = 0;
       width = 0;
       precision = -1;
       /* flags */
       if (*format == '-') {
-	format++;
-	flags |= JUST_LEFT;
+        format++;
+        flags |= JUST_LEFT;
       }
       if (*format == '+') {
-	format++;
-	flags |= POSITIVE_SIGN;
+        format++;
+        flags |= POSITIVE_SIGN;
       }
       if (*format == ' ') {
-	format++;
-	flags |= NO_SIGN_SPACE;
+        format++;
+        flags |= NO_SIGN_SPACE;
       }
       if (*format == '#') {
-	format++;
-	flags |= POUND_FLAG;
+        format++;
+        flags |= POUND_FLAG;
       }
       if (*format == '0') {
-	format++;
-	flags |= PAD_WITH_ZEROES;
+        format++;
+        flags |= PAD_WITH_ZEROES;
       }
       /* width */
       if (*format == '*') {
-	format++;
-	width = va_arg(ap, int);
+        format++;
+        width = va_arg(ap, int);
       } else {
-	for (; *format >= '0' && *format <= '9'; format++) {
-	  width *= 10;
-	  width += *format - '0';
-	}
+        for (; *format >= '0' && *format <= '9'; format++) {
+          width *= 10;
+          width += *format - '0';
+        }
       }
       /* precision */
       if (*format == '.') {
-	format++;
-	if (*format == '*') {
-	  format++;
-	  precision = va_arg(ap, int);
-	} else {
-	  for (precision = 0; *format >= '0' && *format <= '9'; format++) {
-	    precision *= 10;
-	    precision += *format - '0';
-	  }
-	}
+        format++;
+        if (*format == '*') {
+          format++;
+          precision = va_arg(ap, int);
+        } else {
+          for (precision = 0; *format >= '0' && *format <= '9'; format++) {
+            precision *= 10;
+            precision += *format - '0';
+          }
+        }
       }
       /* length */
       if (*format == 'h') {
-	format++;
-	flags |= SHORT;
+        format++;
+        flags |= SHORT;
       } else if (*format == 'l') {
-	format++;
-	if(*format == 'l') {
-	  format++;
-	  flags |= LONGLONG;
-	} else {
-	  flags |= LONG;
-	}
+        format++;
+        if(*format == 'l') {
+          format++;
+          flags |= LONGLONG;
+        } else {
+          flags |= LONG;
+        }
       } else if (*format == 'L') {
-	format++;
-	flags |= LONG;
+        format++;
+        flags |= LONG;
       }
       /* specifiers */
       if (*format == 'c') {
-	cr[0] = (char)va_arg(ap, int);
-	cr[1] = '\0';
-	count += prints(cr, width, 1, flags, stream);
+        cr[0] = (char)va_arg(ap, int);
+        cr[1] = '\0';
+        count += prints(cr, width, 1, flags, stream);
       } else if (*format == 's') {
-	str = (char *)va_arg(ap, long);
-	count += prints(str ? str : "(null)", width, precision, flags, stream);
+        str = (char *)va_arg(ap, long);
+        count += prints(str ? str : "(null)", width, precision, flags, stream);
       } else if (*format == 'd' || *format == 'i') {
-	if(flags & SHORT) {
-	  count += printi((long long)va_arg(ap, int),
-			  10, 1, width, precision, flags, 'a', stream);
-	} else if(flags & LONG) {
-	  count += printi((long long)va_arg(ap, long),
-			  10, 1, width, precision, flags, 'a', stream);
-	} else if(flags & LONGLONG) {
-	  count += printi((long long)va_arg(ap, long long),
-			  10, 1, width, precision, flags, 'a', stream);
-	} else {
-	  count += printi((long long)va_arg(ap, int),
-			  10, 1, width, precision, flags, 'a', stream);
-	}
+        if(flags & SHORT) {
+          count += printi((long long)va_arg(ap, int),
+                          10, 1, width, precision, flags, 'a', stream);
+        } else if(flags & LONG) {
+          count += printi((long long)va_arg(ap, long),
+                          10, 1, width, precision, flags, 'a', stream);
+        } else if(flags & LONGLONG) {
+          count += printi((long long)va_arg(ap, long long),
+                          10, 1, width, precision, flags, 'a', stream);
+        } else {
+          count += printi((long long)va_arg(ap, int),
+                          10, 1, width, precision, flags, 'a', stream);
+        }
       }
     } else {
     printit:
