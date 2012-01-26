@@ -32,7 +32,7 @@
 #include <l0/lrt/bare/arch/amd64/stdio.h>
 
 /* This is the only serial port we use for now : */
-const uint16_t COM1 = 0x3f8;
+static const uint16_t COM1 = 0x3f8;
 
 void serial_init(uint16_t out, FILE *stream);
 

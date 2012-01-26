@@ -37,7 +37,9 @@ ebbos_SOURCES = l0/lrt/bare/arch/amd64/init64.c \
 		l0/lrt/bare/arch/amd64/stdio.c \
 		l0/lrt/bare/arch/amd64/stdio.h \
 		l0/lrt/bare/arch/amd64/string.c \
-		l0/lrt/bare/arch/amd64/string.h
+		l0/lrt/bare/arch/amd64/string.h \
+		l0/lrt/bare/arch/amd64/debugloop.c \
+		l0/lrt/bare/arch/amd64/debugloop.h
 ebbos_LDADD = l0/lrt/bare/arch/amd64/init32.o
 
 #TODO DS: configure should check for grub-mkrescue
