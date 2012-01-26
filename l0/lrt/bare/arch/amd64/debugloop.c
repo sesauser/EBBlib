@@ -28,7 +28,7 @@ static const int XDIGIT_INVALID = 16;
 
 static int handle_gdbreq(uintptr_t cookie);
 static int readmem(uintptr_t cookie);
-static void writehexbyte(char c);
+static void writehexbyte(uint8_t c);
 static int readhexnum(uintptr_t *num, uintptr_t cookie);
 static int xdigit_value(int c);
 
@@ -63,7 +63,7 @@ readmem(uintptr_t cookie) {
     return -1;
   printf("+$");
   while(size > 0) {
-    writehexbyte(*(char*)addr);
+    writehexbyte(*(uint8_t*)addr);
     addr++;
     size--;
   }
@@ -72,8 +72,8 @@ readmem(uintptr_t cookie) {
 }
 
 static void
-writehexbyte(char c) {
-  char nibble[2];
+writehexbyte(uint8_t c) {
+  uint8_t nibble[2];
   nibble[0] = c & 0x0f;
   nibble[1] = (c & 0xf0) >> 4;
   printf("%x%x", nibble[0], nibble[1]);

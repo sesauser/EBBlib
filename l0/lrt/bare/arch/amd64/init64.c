@@ -51,7 +51,6 @@ clear_bss(void)
 
 void __attribute__ ((noreturn))
 init64(multiboot_info_t *mbi) { 
-
   /* Zero out these segment selectors so we dont have issues later */
   __asm__ volatile (
 		    "mov %w[zero], %%ds\n\t"

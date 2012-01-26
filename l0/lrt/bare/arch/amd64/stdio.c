@@ -165,8 +165,10 @@ static int printi(long long val, unsigned int base, int sign,
     rem = uval % base;
     if (rem >= 10) {
       rem += cbase - 10;
+    } else {
+      rem += '0';
     }
-    *--s = (char)rem + '0';
+    *--s = (char)rem;
     pos++;
     uval = uval / base;
   }
@@ -181,11 +183,6 @@ static int printi(long long val, unsigned int base, int sign,
     } else if (flags & NO_SIGN_SPACE) {
       *--s = ' ';
     }
-  } else if (base == 16) {
-    *--s = cbase;
-    *s -= 'A';
-    *s += 'X';
-    *--s = '0';
   }
   return prints(s, width, -1, flags, stream);
 }
@@ -290,6 +287,9 @@ vfprintf(FILE *stream, const char *format, va_list ap)
           count += printi((long long)va_arg(ap, int),
                           10, 1, width, precision, flags, 'a', stream);
         }
+      } else if (*format == 'x') {
+        count += printi((long long)va_arg(ap, int),
+                        16, 1, width, precision, flags, 'a', stream);
       }
     } else {
     printit:
