@@ -27,9 +27,9 @@
 static const int XDIGIT_INVALID = 16;
 
 static int handle_gdbreq(uintptr_t cookie);
-static int readmem(uintptr_t cookie);
-static void writehexbyte(uint8_t c);
-static int readhexnum(uintptr_t *num, uintptr_t cookie);
+static int readmem(uintptr_t cookie, uint8_t checksum);
+static void writehexbyte(uint8_t c, uint8_t *checksum);
+static int readhexnum(uintptr_t *num, uintptr_t cookie, uint8_t *checksum);
 static int xdigit_value(int c);
 
 void
@@ -48,44 +48,55 @@ handle_gdbreq(uintptr_t cookie) {
     return -1;
   switch(c = serial_getc(cookie)) {
   case 'm':
-    return readmem(cookie);
+    return readmem(cookie, 'm');
   default:
     return -1;
   }
 }
 
 static int
-readmem(uintptr_t cookie) {
+readmem(uintptr_t cookie, uint8_t checksum) {
   uintptr_t addr, size;
-  if(readhexnum(&addr, cookie) != ',')
+  uint8_t reply_checksum = 0;
+  if(readhexnum(&addr, cookie, &checksum) != ',')
     return -1;
-  if(readhexnum(&size, cookie) != '#')
+  checksum += ',';
+  if(readhexnum(&size, cookie, &checksum) != '#')
     return -1;
+  // TODO: we might want to actually check the checksum here,
+  // I don't currently because I haven't hooked things up to gdb yet,
+  // and don't want to calculate it. We're still reading it in though. --isd
+  serial_getc(cookie);
+  serial_getc(cookie);
   printf("+$");
   while(size > 0) {
-    writehexbyte(*(uint8_t*)addr);
+    writehexbyte(*(uint8_t*)addr, &reply_checksum);
     addr++;
     size--;
   }
   printf("#");
+  writehexbyte(reply_checksum, NULL);
   return 0;
 }
 
 static void
-writehexbyte(uint8_t c) {
+writehexbyte(uint8_t c, uint8_t *checksum) {
   uint8_t nibble[2];
   nibble[0] = c & 0x0f;
   nibble[1] = (c & 0xf0) >> 4;
   printf("%x%x", nibble[0], nibble[1]);
+  if(checksum)
+    *checksum += nibble[0] + nibble[1];
 }
 
 static int
-readhexnum(uintptr_t *num, uintptr_t cookie) {
+readhexnum(uintptr_t *num, uintptr_t cookie, uint8_t *checksum) {
   int c;
   uintptr_t xdigit;
   *num = 0;
   c = serial_getc(cookie);
   while((xdigit = xdigit_value(c)) != XDIGIT_INVALID) {
+    *checksum += c;
     *num *= 16;
     *num += xdigit;
     c = serial_getc(cookie);
