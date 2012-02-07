@@ -23,17 +23,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <l0/lrt/ulnx/types.h>
 #include <l0/lrt/pic.h>
 #include <l0/lrt/mem.h>
 #include <l0/lrt/trans.h>
 
 extern void l0_start(void);
 
-static struct boot_args_t {
-  intptr_t cores;
-  volatile intptr_t cores_to_start;
-} boot_args;
-
+struct boot_args_t boot_args;
 
 // first code to be runnining on an interrupt
 void lrt_start(void)

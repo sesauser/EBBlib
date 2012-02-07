@@ -22,4 +22,9 @@
  * THE SOFTWARE.
  */
 
+struct boot_args_t {
+  intptr_t cores;
+  volatile intptr_t cores_to_start;
+};
+
 #endif

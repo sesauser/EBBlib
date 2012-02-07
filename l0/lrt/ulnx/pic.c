@@ -209,7 +209,7 @@ lrt_pic_init(lrt_pic_handler h)
   bzero(lpics, sizeof(lpics));
 
 #ifdef __APPLE__
-  // initialize key for pthreds
+  // initialize key for pthreads
   pthread_key_create(&lrt_pic_myid_pthreadkey, NULL);
 #endif
 
