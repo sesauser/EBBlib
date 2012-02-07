@@ -31,6 +31,7 @@ static int readmem(uintptr_t cookie, uint8_t checksum);
 static void writehexbyte(uint8_t c, uint8_t *checksum);
 static int readhexnum(uintptr_t *num, uintptr_t cookie, uint8_t *checksum);
 static int xdigit_value(int c);
+static int writemem(uintptr_t cookie, uint8_t checksum);
 
 void
 debugloop(uintptr_t cookie) {
@@ -49,6 +50,8 @@ handle_gdbreq(uintptr_t cookie) {
   switch(c = serial_getc(cookie)) {
   case 'm':
     return readmem(cookie, 'm');
+  case 'M':
+    return writemem(cookie, 'M');
   default:
     return -1;
   }
@@ -75,6 +78,35 @@ readmem(uintptr_t cookie, uint8_t checksum) {
     size--;
   }
   printf("#");
+  writehexbyte(reply_checksum, NULL);
+  return 0;
+}
+
+static int
+writemem(uintptr_t cookie, uint8_t checksum) {
+  uintptr_t addr, size;
+  uint8_t c;
+  uint8_t reply_checksum;
+  if(readhexnum(&addr, cookie, &checksum) != ',')
+    return -1;
+  checksum += ',';
+  if(readhexnum(&size, cookie, &checksum) != ':')
+    return -1;
+  c = serial_getc(cookie);
+  while(c != '#' && size > 0) {
+    uint8_t byte;
+    byte = xdigit_value(c);
+    byte |= xdigit_value(serial_getc(cookie)) * 16;
+    *(uint8_t*)addr = byte;
+    addr++;
+    size--;
+    c = serial_getc(cookie);
+  }
+  // get the checksum. currently not actually checking it.
+  serial_getc(cookie);
+  serial_getc(cookie);
+  reply_checksum = 'O' + 'K';
+  printf("+$OK#");
   writehexbyte(reply_checksum, NULL);
   return 0;
 }
