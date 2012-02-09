@@ -129,11 +129,11 @@ EBBRC ebbmain(void)
   MsgHandlerId id = InitMsgHandlerTst();
 
   // bogus call to test IPI to msgmgr
-  COBJ_EBBCALL(theMsgMgrId, msg0, 0, id);
-  COBJ_EBBCALL(theMsgMgrId, msg1, 0, id, 1);
-  COBJ_EBBCALL(theMsgMgrId, msg2, 0, id, 1, 2);
-  COBJ_EBBCALL(theMsgMgrId, msg3, 0, id, 1, 2, 3);
-  COBJ_EBBCALL(theMsgMgrId, msg0, 0, id);
+//  COBJ_EBBCALL(theMsgMgrId, msg0, 0, id);
+  COBJ_EBBCALL(theMsgMgrId, msg1, 1, id, 1);
+//  COBJ_EBBCALL(theMsgMgrId, msg2, 0, id, 1, 2);
+//  COBJ_EBBCALL(theMsgMgrId, msg3, 0, id, 1, 2, 3);
+//  COBJ_EBBCALL(theMsgMgrId, msg0, 0, id);
 
   return EBBRC_OK;
 }

@@ -36,6 +36,7 @@ typedef enum {
   EBBRC_GENERIC_FAILURE = -1, 
   EBBRC_BADPARAMETER = -2,
   EBBRC_OUTOFRESOURCES = -3,
+  EBBRC_NOREP = -4,
   EBBRC_OK = 0 
 } EBBRC_STDVALS;
 #define EBBRC_SUCCESS(rc) ( rc >= 0 )

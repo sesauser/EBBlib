@@ -126,14 +126,22 @@ MsgMgrPrim_findTarget(MsgMgrPrimRef self, EvntLoc loc, MsgMgrPrimRef *target)
 	 node != NULL; 
 	 node = self->theRoot->ft->nextRep(self->theRoot, node, 
 					   (EBBRep **)&rep)) {
-      EBBAssert(rep != NULL);
+      if(rep == NULL) { // rep doesn't exist
+	return EBBRC_NOREP;
+      }
+
       if (rep->eventLoc == loc) break;
     }
-    EBBAssert(rep != NULL);
+
+    if(rep == NULL) { // rep doesn't exist
+	return EBBRC_NOREP;
+    }
+
     self->reps[loc] = rep;
   }
   // FIXME: handle case that rep doesn't yet exist
   *target = rep;
+
   return EBBRC_OK;
 }
 
@@ -165,7 +173,12 @@ MsgMgrPrim_msg1(MsgMgrRef _self, EvntLoc loc, MsgHandlerId id, uintptr_t a1)
   EBBRC rc;
 
   rc = MsgMgrPrim_findTarget(self, loc, &target);
-  EBBRCAssert(rc);
+  if(rc == EBBRC_NOREP ) {
+	sleep(2);
+	rc = MsgMgrPrim_findTarget(self, loc, &target);
+  }
+
+//  EBBRCAssert(rc);
 
   rc = EBBPrimMalloc(sizeof(*msg), &msg, EBB_MEM_DEFAULT);
   EBBRCAssert(rc);
