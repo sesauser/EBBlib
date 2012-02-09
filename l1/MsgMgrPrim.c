@@ -139,7 +139,7 @@ MsgMgrPrim_findTarget(MsgMgrPrimRef self, EvntLoc loc, MsgMgrPrimRef *target)
 
     self->reps[loc] = rep;
   }
-  // FIXME: handle case that rep doesn't yet exist
+  
   *target = rep;
 
   return EBBRC_OK;
@@ -154,7 +154,10 @@ MsgMgrPrim_msg0(MsgMgrRef _self, EvntLoc loc, MsgHandlerId id)
   EBBRC rc;
 
   rc = MsgMgrPrim_findTarget(self, loc, &target);
-  EBBRCAssert(rc);
+  if(rc == EBBRC_NOREP ) {
+	sleep(2);
+	rc = MsgMgrPrim_findTarget(self, loc, &target);
+  }
 
   EBBPrimMalloc(sizeof(*msg), &msg, EBB_MEM_DEFAULT);
   msg->id = id;
@@ -178,8 +181,6 @@ MsgMgrPrim_msg1(MsgMgrRef _self, EvntLoc loc, MsgHandlerId id, uintptr_t a1)
 	rc = MsgMgrPrim_findTarget(self, loc, &target);
   }
 
-//  EBBRCAssert(rc);
-
   rc = EBBPrimMalloc(sizeof(*msg), &msg, EBB_MEM_DEFAULT);
   EBBRCAssert(rc);
   msg->id = id;
@@ -199,7 +200,10 @@ MsgMgrPrim_msg2(MsgMgrRef _self, EvntLoc loc, MsgHandlerId id, uintptr_t a1,
   EBBRC rc;
 
   rc = MsgMgrPrim_findTarget(self, loc, &target);
-  EBBRCAssert(rc);
+  if(rc == EBBRC_NOREP ) {
+	sleep(2);
+	rc = MsgMgrPrim_findTarget(self, loc, &target);
+  }
 
   rc = EBBPrimMalloc(sizeof(*msg), &msg, EBB_MEM_DEFAULT);
   EBBRCAssert(rc);
@@ -221,7 +225,10 @@ MsgMgrPrim_msg3(MsgMgrRef _self, EvntLoc loc, MsgHandlerId id,
   EBBRC rc;
 
   rc = MsgMgrPrim_findTarget(self, loc, &target);
-  EBBRCAssert(rc);
+  if(rc == EBBRC_NOREP ) {
+	sleep(2);
+	rc = MsgMgrPrim_findTarget(self, loc, &target);
+  }
 
   rc = EBBPrimMalloc(sizeof(*msg), &msg, EBB_MEM_DEFAULT);
   EBBRCAssert(rc);
