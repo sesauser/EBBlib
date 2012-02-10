@@ -1,5 +1,3 @@
-#ifndef __ULNX_EBB_TYPES_H__
-#define __ULNX_EBB_TYPES_H__
 /*
  * Copyright (C) 2011 by Project SESA, Boston University
  *
@@ -21,5 +19,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include <inttypes.h>
 
-#endif
+void set_boot_core_count(intptr_t cores);
+intptr_t get_boot_core_count(void);
+void increment_core_count(void);
+intptr_t get_available_cores(void);

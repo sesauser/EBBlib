@@ -23,14 +23,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <l0/lrt/ulnx/types.h>
 #include <l0/lrt/pic.h>
 #include <l0/lrt/mem.h>
 #include <l0/lrt/trans.h>
+#include <lrt/ulnx/boot_info.h>
 
 extern void l0_start(void);
 
-struct boot_args_t boot_args;
+volatile intptr_t cores_to_start;
 
 // first code to be runnining on an interrupt
 void lrt_start(void)
@@ -38,10 +38,11 @@ void lrt_start(void)
   // check cores
   // start up another core, with the 
   fprintf(stderr, "%s: start pic id %" PRIuPTR "!\n", __func__, lrt_pic_myid);
-  if (boot_args.cores_to_start > 0) {
-    while (__sync_fetch_and_add(&boot_args.cores_to_start, -1) > 0) {
+  if (cores_to_start > 0) {
+    while (__sync_fetch_and_add(&cores_to_start, -1) > 0) {
       intptr_t core;
-      core = lrt_pic_add_core();
+      core = lrt_pic_add_core(); // FIXME check if this succeeded?
+      increment_core_count();
       fprintf(stderr, "***%s: started core %" PRIxPTR "!\n", __func__, core);
     }
   }
@@ -57,12 +58,14 @@ __attribute__ ((weak))
 int
 main(int argc, char **argv) 
 {
-  boot_args.cores = 1;
-  boot_args.cores_to_start = 0;
+  set_boot_core_count(1);
+  cores_to_start = 0;
+
   if (argc>1) {
-    boot_args.cores=atoi(argv[1]);
-    boot_args.cores_to_start = boot_args.cores -1;
+    set_boot_core_count(atoi(argv[1]));
+    cores_to_start = get_boot_core_count()-1;
   }
+
   fprintf(stderr, "%s: start!\n", __func__);
   lrt_pic_init(lrt_start);
   return -1;
