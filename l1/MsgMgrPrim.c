@@ -154,10 +154,7 @@ MsgMgrPrim_msg0(MsgMgrRef _self, EvntLoc loc, MsgHandlerId id)
   EBBRC rc;
 
   rc = MsgMgrPrim_findTarget(self, loc, &target);
-  if(rc == EBBRC_NOREP ) {
-	sleep(2);
-	rc = MsgMgrPrim_findTarget(self, loc, &target);
-  }
+  if(rc == EBBRC_NOREP ) return rc;
 
   EBBPrimMalloc(sizeof(*msg), &msg, EBB_MEM_DEFAULT);
   msg->id = id;
@@ -176,10 +173,7 @@ MsgMgrPrim_msg1(MsgMgrRef _self, EvntLoc loc, MsgHandlerId id, uintptr_t a1)
   EBBRC rc;
 
   rc = MsgMgrPrim_findTarget(self, loc, &target);
-  if(rc == EBBRC_NOREP ) {
-	sleep(2);
-	rc = MsgMgrPrim_findTarget(self, loc, &target);
-  }
+  if(rc == EBBRC_NOREP ) return rc;
 
   rc = EBBPrimMalloc(sizeof(*msg), &msg, EBB_MEM_DEFAULT);
   EBBRCAssert(rc);
@@ -200,10 +194,7 @@ MsgMgrPrim_msg2(MsgMgrRef _self, EvntLoc loc, MsgHandlerId id, uintptr_t a1,
   EBBRC rc;
 
   rc = MsgMgrPrim_findTarget(self, loc, &target);
-  if(rc == EBBRC_NOREP ) {
-	sleep(2);
-	rc = MsgMgrPrim_findTarget(self, loc, &target);
-  }
+  if(rc == EBBRC_NOREP ) return rc;
 
   rc = EBBPrimMalloc(sizeof(*msg), &msg, EBB_MEM_DEFAULT);
   EBBRCAssert(rc);
@@ -225,10 +216,7 @@ MsgMgrPrim_msg3(MsgMgrRef _self, EvntLoc loc, MsgHandlerId id,
   EBBRC rc;
 
   rc = MsgMgrPrim_findTarget(self, loc, &target);
-  if(rc == EBBRC_NOREP ) {
-	sleep(2);
-	rc = MsgMgrPrim_findTarget(self, loc, &target);
-  }
+  if(rc == EBBRC_NOREP ) return rc;
 
   rc = EBBPrimMalloc(sizeof(*msg), &msg, EBB_MEM_DEFAULT);
   EBBRCAssert(rc);
