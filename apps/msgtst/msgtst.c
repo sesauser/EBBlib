@@ -44,6 +44,7 @@
 #include <l0/MemMgrPrim.h>
 #include <l1/MsgMgr.h>
 #include <l1/MsgMgrPrim.h>
+#include <lrt/ulnx/boot_info.h>
 
 // write a simple message handler
 // make call to the message handler
@@ -60,7 +61,7 @@ static EBBRC
 MsgHandlerTst_msg1(MsgHandlerRef _self, uintptr_t a1)
 {
   // ack that we are handing interrupt
-  EBB_LRT_printf("%s: got message\n", __func__);
+  EBB_LRT_printf("%s: got message \"%o\" at Event Location %o\n", __func__, (unsigned int)a1, (unsigned int)MyEL());
   return EBBRC_OK;
 };
 static EBBRC 
@@ -127,13 +128,26 @@ InitMsgHandlerTst()
 EBBRC ebbmain(void)
 {
   MsgHandlerId id = InitMsgHandlerTst();
+  EvntLoc i, el; 
 
-  // bogus call to test IPI to msgmgr
-//  COBJ_EBBCALL(theMsgMgrId, msg0, 0, id);
-  COBJ_EBBCALL(theMsgMgrId, msg1, 1, id, 1);
-//  COBJ_EBBCALL(theMsgMgrId, msg2, 0, id, 1, 2);
-//  COBJ_EBBCALL(theMsgMgrId, msg3, 0, id, 1, 2, 3);
-//  COBJ_EBBCALL(theMsgMgrId, msg0, 0, id);
+  el=MyEL();
 
+  for (i=0; i<get_boot_core_count();i++) {
+	  if(i!=el) {	
+// bogus call to test IPI to msgmgr
+      EBB_LRT_printf("We are at event location %o about to send message to event location %o\n", (unsigned int)el, (unsigned int)i);
+//      COBJ_EBBCALL(theMsgMgrId, msg0, i, id);
+      COBJ_EBBCALL(theMsgMgrId, msg1, i, id, el);
+//      COBJ_EBBCALL(theMsgMgrId, msg2, i, id, 1, 2);
+//      COBJ_EBBCALL(theMsgMgrId, msg3, i, id, 1, 2, 3);
+
+/*
+	  	while(COBJ_EBBCALL(theMsgMgrId, msg0, i, id)==EBBRC_NOREP) { sleep(1); }
+  		while(COBJ_EBBCALL(theMsgMgrId, msg1, i, id, 1)==EBBRC_NOREP) { sleep(1); }
+  		while(COBJ_EBBCALL(theMsgMgrId, msg2, i, id, 1, 2)==EBBRC_NOREP) { sleep(1); }
+  		while(COBJ_EBBCALL(theMsgMgrId, msg3, i, id, 1, 2, 3)==EBBRC_NOREP) { sleep(1); }
+*/
+	   }
+  }
   return EBBRC_OK;
 }
