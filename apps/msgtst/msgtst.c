@@ -50,6 +50,11 @@
 // make call to the message handler
 // figure out number of cores, and send messages between them
 
+typedef struct test_message_struct {
+    int val1;
+    int val2;
+}test_message;
+
 static EBBRC 
 MsgHandlerTst_msg0(MsgHandlerRef _self)
 {
@@ -67,8 +72,12 @@ MsgHandlerTst_msg1(MsgHandlerRef _self, uintptr_t a1)
 static EBBRC 
 MsgHandlerTst_msg2(MsgHandlerRef _self, uintptr_t a1, uintptr_t a2)
 {
+  test_message * t;
+
+  t=(test_message *)a2;
+
   // ack that we are handing interrupt
-  EBB_LRT_printf("%s: got message\n", __func__);
+  EBB_LRT_printf("%s: got message \"%o\" at Event Location %o and test pointer struct has members %i and %i\n", __func__, (unsigned int)a1, (unsigned int)MyEL(), t->val1, t->val2);
   return EBBRC_OK;
 };
 static EBBRC 
@@ -129,7 +138,15 @@ EBBRC ebbmain(void)
 {
   MsgHandlerId id = InitMsgHandlerTst();
   EvntLoc i, el; 
+  test_message * test;
+  EBBRC rc;
 
+  rc = EBBPrimMalloc(sizeof(*test), &test, EBB_MEM_DEFAULT);
+  EBBRCAssert(rc);
+
+  test->val1=101;
+  test->val2=202;
+  
   el=MyEL();
 
   for (i=0; i<get_boot_core_count();i++) {
@@ -137,8 +154,8 @@ EBBRC ebbmain(void)
 // bogus call to test IPI to msgmgr
       EBB_LRT_printf("We are at event location %o about to send message to event location %o\n", (unsigned int)el, (unsigned int)i);
 //      COBJ_EBBCALL(theMsgMgrId, msg0, i, id);
-      COBJ_EBBCALL(theMsgMgrId, msg1, i, id, el);
-//      COBJ_EBBCALL(theMsgMgrId, msg2, i, id, 1, 2);
+//      COBJ_EBBCALL(theMsgMgrId, msg1, i, id, el);
+        COBJ_EBBCALL(theMsgMgrId, msg2, i, id, el, (uintptr_t)test);
 //      COBJ_EBBCALL(theMsgMgrId, msg3, i, id, 1, 2, 3);
 
 /*
