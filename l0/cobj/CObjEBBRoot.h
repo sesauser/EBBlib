@@ -22,6 +22,16 @@
  * THE SOFTWARE.
  */
 
+enum {
+  SYMTYPE_FUNC_TABLE_PTR,
+  SYMTYPE_CREATE_REP_PTR
+} SymbolTypeEnum ;
+
+struct SymbolType {
+  SymbolTypeEnum symtype;
+  long v;
+} 
+
 CObject(CObjEBBRoot)
 {
   CObjInterface(CObjEBBRoot) *ft;
@@ -31,6 +41,7 @@ CObjInterface(CObjEBBRoot)
 {
   EBBRC (*handleMiss)(CObjEBBRootRef self, EBBRep **obj,
 		      EBBLTrans *lt, FuncNum fnum);
+  EBBRC (*getSymbol)(CObjEBBRootRef self, struct SybmolType *v);
 };
 
 #endif

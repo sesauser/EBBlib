@@ -584,12 +584,14 @@ EventMgrPrimImpInit(void)
   EventMgrPrimId id;
   EventMgrPrimImpRef repRef;
   EvntLoc myel;
+  EBBRC rc;
 
   if (__sync_bool_compare_and_swap(&theEventMgrPrimId, (EventMgrPrimId)0,
 				   (EventMgrPrimId)-1)) {
     EBBAssert(MAXEVENTS > lrt_pic_numvec());
 
-    EBBRCAssert(CObjEBBRootMultiImpCreate(&rootRef, EventMgrPrimImp_createRepAssert));
+    rc = CObjEBBRootMultiImpCreate(&rootRef, EventMgrPrimImp_createRepAssert);
+    EBBRCAssert(rc);
     id = (EventMgrPrimId)EBBIdAlloc();
     EBBAssert(id != NULL);
 
